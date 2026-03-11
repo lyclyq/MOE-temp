@@ -51,8 +51,28 @@ else
   git commit -m "sync: ${TS}"
 fi
 
+PUSH_URL="${REMOTE_URL}"
+if [ -n "${MOE_TEMP_GITHUB_TOKEN:-}" ]; then
+  if [[ "${REMOTE_URL}" =~ ^https://github.com/(.+)$ ]]; then
+    GH_USER="${MOE_TEMP_GITHUB_USER:-x-access-token}"
+    PUSH_URL="https://${GH_USER}:${MOE_TEMP_GITHUB_TOKEN}@github.com/${BASH_REMATCH[1]}"
+  else
+    echo "[sync] MOE_TEMP_GITHUB_TOKEN is set but MOE_TEMP_REMOTE_URL is not https://github.com/..."
+  fi
+fi
+
+if [[ "${PUSH_URL}" =~ ^git@github.com: ]]; then
+  if [ -n "${MOE_TEMP_GIT_SSH_COMMAND:-}" ]; then
+    export GIT_SSH_COMMAND="${MOE_TEMP_GIT_SSH_COMMAND}"
+  elif [ -n "${MOE_TEMP_SSH_KEY_PATH:-}" ]; then
+    export GIT_SSH_COMMAND="ssh -i ${MOE_TEMP_SSH_KEY_PATH} -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/tmp/moe-temp-known_hosts"
+  else
+    export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/tmp/moe-temp-known_hosts"
+  fi
+fi
+
 git remote remove origin >/dev/null 2>&1 || true
-git remote add origin "${REMOTE_URL}"
+git remote add origin "${PUSH_URL}"
 
 echo "[sync] force push -> ${REMOTE_URL} ${BRANCH}"
 git push --force origin "${BRANCH}"

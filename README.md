@@ -112,8 +112,8 @@ python scripts/verify_ours_path.py \
 
 Generated artifacts:
 
-- `ours_diagnostics.jsonl`: per-step metrics (`L_task`, `L_conflict`, expert logits/load/entropy, detach checks)
-- `ours_diagnostics_summary.json`: pass/fail summary for detach channel and gradient drift bounds
+- `runs/selfcheck/ours_diagnostics.jsonl`: per-step metrics (`L_task`, `L_conflict`, expert logits/load/entropy, detach checks)
+- `runs/selfcheck/ours_diagnostics_summary.json`: pass/fail summary for detach channel and gradient drift bounds
 
 ## Glue4 Smoke (One Command)
 
@@ -171,3 +171,33 @@ MVP diagnostics (auto-generated, 12 charts):
 - `load_pie_compare_step_3_target360_actual*.png`
 - `load_pie_compare_final_step_*.png`
 - `expert_seed_variance_score_05final_05max.png`
+
+## Daily Force Sync To MOE-temp (11:00)
+
+Install user timer:
+
+```bash
+./scripts/install_moe_temp_timer.sh
+```
+
+Timer:
+
+- unit: `moe-temp-sync.timer`
+- schedule: every day at `11:00` (local system timezone)
+- behavior: force-push mirror to `https://github.com/lyclyq/MOE-temp.git` branch `main`
+- includes `runs/` by default (excludes `**/_hf_cache/` cache directories)
+
+Auth for non-interactive timer run:
+
+1. Copy/edit `~/.config/moe-temp-sync.env` (auto-created from `systemd/moe-temp-sync.env.example` on install).
+2. Set your GitHub PAT:
+   `MOE_TEMP_GITHUB_USER=<github_user>`
+   `MOE_TEMP_GITHUB_TOKEN=<github_pat>`
+3. Reload and test:
+
+```bash
+systemctl --user daemon-reload
+systemctl --user restart moe-temp-sync.timer
+systemctl --user start moe-temp-sync.service
+systemctl --user status moe-temp-sync.service --no-pager -l
+```
