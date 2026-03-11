@@ -1,0 +1,53 @@
+seed: 2
+
+method:
+  name: baseline_avg # ours | baseline_avg | baseline_cagrad
+  ours:
+    lambda_align: 1.0e-3
+    eps: 1.0e-8
+    micro_batch_size: 8
+  baseline_cagrad:
+    c: 0.4
+    inner_steps: 10
+    inner_lr: 0.1
+    eps: 1.0e-8
+
+model:
+  backbone_backend: hf # tiny | hf
+  hf_load_pretrained: true
+  hf_pretrained_name: microsoft/deberta-v3-base
+  hf_local_files_only: false
+  backbone: deberta # roberta | deberta | distilbert
+  expert_type: lora # lora | ffn
+  routing_mode: softmax # softmax | topk
+  top_k: 2
+  vocab_size: 30522
+  seq_len: 128
+  max_seq_len: 128
+  hidden_dim: 768
+  dropout: 0.1
+  num_classes: 2
+  num_experts: 4
+  lora_rank: 16
+  lora_alpha: 16.0
+  ffn_hidden_dim: 3072
+
+train:
+  steps: 500
+  batch_size: 8
+  micro_batch_size: 4
+  eval_every_steps: 30
+  eval_max_batches: 0
+  lr: 2.0e-5
+  weight_decay: 0.01
+  grad_clip: 1.0
+  log_every: 10
+
+data:
+  source: glue # synthetic | glue
+  train_size: 0 # 0 = full split
+  val_size: 0   # 0 = full split
+  datasets:
+    - glue/rte
+    - glue/mrpc
+    - glue/cola

@@ -1,0 +1,131 @@
+{
+  "best_val_acc": 0.3385416666666667,
+  "cli_overrides": [
+    "seed=2",
+    "method.name=baseline_cagrad",
+    "train.lr=4.349118552081964e-06",
+    "train.steps=100",
+    "train.warmup_ratio=0.1",
+    "method.ours.lambda_align=0.001",
+    "method.ours.eps=1e-08",
+    "method.ours.micro_batch_size=8"
+  ],
+  "config_path": "configs/base.yaml",
+  "config_path_resolved": "/share/home/yuli0398/Optimization/MOE-grad-conflict-routing/configs/base.yaml",
+  "data_reproducibility": {
+    "data_source": "synthetic",
+    "global_seed": 2,
+    "loader_seed_base": 2035,
+    "task_order": [
+      "task_alpha",
+      "task_beta",
+      "task_gamma"
+    ],
+    "tasks": {
+      "task_alpha": {
+        "synthetic_rule_seed": 778825,
+        "synthetic_train_data_seed": 1050,
+        "synthetic_val_data_seed": 2041,
+        "task_seed_offset": 1048,
+        "train_loader_shuffle_seed": 8586203,
+        "val_loader_shuffle_seed": 8586204
+      },
+      "task_beta": {
+        "synthetic_rule_seed": 778719,
+        "synthetic_train_data_seed": 944,
+        "synthetic_val_data_seed": 1935,
+        "task_seed_offset": 942,
+        "train_loader_shuffle_seed": 7717957,
+        "val_loader_shuffle_seed": 7717958
+      },
+      "task_gamma": {
+        "synthetic_rule_seed": 778822,
+        "synthetic_train_data_seed": 1047,
+        "synthetic_val_data_seed": 2038,
+        "task_seed_offset": 1045,
+        "train_loader_shuffle_seed": 8561630,
+        "val_loader_shuffle_seed": 8561631
+      }
+    }
+  },
+  "final_val_acc": 0.3352864583333333,
+  "method": "baseline_cagrad",
+  "num_eval_points": 4,
+  "reproducibility": {
+    "command": "/share/home/yuli0398/Optimization/MOE-grad-conflict-routing/scripts/run.py --config configs/base.yaml --set seed=2 --set method.name=baseline_cagrad --set train.lr=4.349118552081964e-06 --set train.steps=100 --set train.warmup_ratio=0.1 --set method.ours.lambda_align=0.001 --set method.ours.eps=1e-08 --set method.ours.micro_batch_size=8 --out runs_lr_sweep_step100_gpu1/baseline_cagrad/lr_4p35em06/baseline_cagrad_s2.json --curve_out runs_lr_sweep_step100_gpu1/baseline_cagrad/lr_4p35em06/baseline_cagrad_s2_curve.csv",
+    "curve_path": "/share/home/yuli0398/Optimization/MOE-grad-conflict-routing/runs_lr_sweep_step100_gpu1/baseline_cagrad/lr_4p35em06/baseline_cagrad_s2_curve.csv",
+    "cwd": "/share/home/yuli0398/Optimization/MOE-grad-conflict-routing",
+    "runtime": {
+      "cuda_available": true,
+      "cuda_device_count": 1,
+      "cuda_device_names": [
+        "NVIDIA GeForce RTX 3090"
+      ],
+      "platform": "Linux-5.15.0-139-generic-x86_64-with-glibc2.31",
+      "python_version": "3.11.9",
+      "torch_version": "2.2.2+cu121"
+    },
+    "summary_path": "/share/home/yuli0398/Optimization/MOE-grad-conflict-routing/runs_lr_sweep_step100_gpu1/baseline_cagrad/lr_4p35em06/baseline_cagrad_s2.json"
+  },
+  "resolved_config": {
+    "data": {
+      "datasets": [
+        "task_alpha",
+        "task_beta",
+        "task_gamma"
+      ],
+      "source": "synthetic",
+      "train_size": 4096,
+      "val_size": 1024
+    },
+    "method": {
+      "baseline_cagrad": {
+        "c": 0.4,
+        "eps": 1e-08,
+        "inner_lr": 0.1,
+        "inner_steps": 10
+      },
+      "name": "baseline_cagrad",
+      "ours": {
+        "eps": 1e-08,
+        "lambda_align": 0.001,
+        "micro_batch_size": 8
+      }
+    },
+    "model": {
+      "backbone": "roberta",
+      "backbone_backend": "tiny",
+      "dropout": 0.1,
+      "expert_type": "lora",
+      "ffn_hidden_dim": 1024,
+      "hf_load_pretrained": false,
+      "hf_local_files_only": false,
+      "hf_pretrained_name": "",
+      "hidden_dim": 256,
+      "lora_alpha": 16.0,
+      "lora_rank": 16,
+      "max_seq_len": 64,
+      "num_classes": 3,
+      "num_experts": 4,
+      "routing_mode": "softmax",
+      "seq_len": 64,
+      "top_k": 2,
+      "vocab_size": 30522
+    },
+    "seed": 2,
+    "train": {
+      "batch_size": 64,
+      "eval_every_steps": 30,
+      "eval_max_batches": 0,
+      "grad_clip": 1.0,
+      "log_every": 10,
+      "lr": 4.349118552081964e-06,
+      "micro_batch_size": 8,
+      "steps": 100,
+      "warmup_ratio": 0.1,
+      "weight_decay": 0.0
+    }
+  },
+  "resolved_config_sha256": "e19bf8f0b6496ba6191b3e17d748f4e537137991adcd5cafa909b70b590d221c",
+  "seed": 2
+}

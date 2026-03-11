@@ -1,0 +1,55 @@
+seed: 42
+
+method:
+  name: ours # ours | baseline_avg | baseline_cagrad
+  ours:
+    lambda_align: 1.0e-3
+    eps: 1.0e-8
+    micro_batch_size: 8
+  baseline_cagrad:
+    c: 0.4
+    inner_steps: 10
+    inner_lr: 0.1
+    eps: 1.0e-8
+
+model:
+  backbone_backend: tiny # tiny | hf
+  hf_load_pretrained: false
+  hf_pretrained_name: ""
+  hf_local_files_only: false
+  backbone: roberta # roberta | deberta | distilbert
+  expert_type: lora # lora | ffn
+  routing_mode: softmax # softmax | topk
+  top_k: 2
+  vocab_size: 30522
+  seq_len: 64
+  max_seq_len: 64
+  hidden_dim: 256
+  dropout: 0.1
+  num_classes: 3
+  num_experts: 4
+  lora_rank: 16
+  lora_alpha: 16.0
+  ffn_hidden_dim: 1024
+
+train:
+  steps: 120
+  batch_size: 64
+  micro_batch_size: 8 # shared by ours and baselines for fair routing granularity
+  eval_every_steps: 30
+  eval_max_batches: 0
+  lr: 1.0e-3
+  weight_decay: 0.0
+  grad_clip: 1.0
+  log_every: 10
+
+data:
+  source: synthetic # synthetic | glue
+  # optional explicit base for per-task dataloader shuffle seeds
+  # loader_seed_base: 12345
+  train_size: 4096
+  val_size: 1024
+  datasets:
+    - task_alpha
+    - task_beta
+    - task_gamma
