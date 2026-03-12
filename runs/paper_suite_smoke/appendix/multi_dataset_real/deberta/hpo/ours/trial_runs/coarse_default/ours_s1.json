@@ -1,0 +1,152 @@
+{
+  "best_val_acc": 0.625,
+  "cli_overrides": [
+    "model.backbone_backend=hf",
+    "model.hf_load_pretrained=true",
+    "model.backbone=deberta",
+    "model.hf_pretrained_name=microsoft/deberta-v3-base",
+    "data.train_size=64",
+    "data.val_size=32",
+    "seed=1",
+    "method.name=ours",
+    "train.steps=5",
+    "train.eval_every_steps=5",
+    "method.ours.use_load_norm=true",
+    "method.ours.eps=1e-08",
+    "method.ours.lambda_align=0.001",
+    "train.lr=2e-05"
+  ],
+  "config_path": "configs/multitask_textcls_sst2_yelp_amazon_real.yaml",
+  "config_path_resolved": "/share/home/yuli0398/Optimization/MOE-grad-conflict-routing/configs/multitask_textcls_sst2_yelp_amazon_real.yaml",
+  "data_reproducibility": {
+    "data_source": "textcls",
+    "global_seed": 1,
+    "loader_seed_base": 1026,
+    "task_order": [
+      "glue/sst2",
+      "yelp_polarity",
+      "amazon_polarity"
+    ],
+    "tasks": {
+      "amazon_polarity": {
+        "dataset": "amazon_polarity",
+        "num_labels": 2,
+        "subset": null,
+        "task": "amazon_polarity",
+        "tokenizer_name": "microsoft/deberta-v3-base",
+        "train_loader_shuffle_seed": 13311401,
+        "train_size": 64,
+        "train_split": "train",
+        "val_loader_shuffle_seed": 13311402,
+        "val_size": 32,
+        "val_split": "test"
+      },
+      "glue/sst2": {
+        "dataset": "glue",
+        "num_labels": 2,
+        "subset": "sst2",
+        "task": "glue/sst2",
+        "tokenizer_name": "microsoft/deberta-v3-base",
+        "train_loader_shuffle_seed": 7143578,
+        "train_size": 64,
+        "train_split": "train",
+        "val_loader_shuffle_seed": 7143579,
+        "val_size": 32,
+        "val_split": "validation"
+      },
+      "yelp_polarity": {
+        "dataset": "yelp_polarity",
+        "num_labels": 2,
+        "subset": null,
+        "task": "yelp_polarity",
+        "tokenizer_name": "microsoft/deberta-v3-base",
+        "train_loader_shuffle_seed": 11640437,
+        "train_size": 64,
+        "train_split": "train",
+        "val_loader_shuffle_seed": 11640438,
+        "val_size": 32,
+        "val_split": "test"
+      }
+    }
+  },
+  "final_val_acc": 0.625,
+  "method": "ours",
+  "num_eval_points": 1,
+  "reproducibility": {
+    "command": "/share/home/yuli0398/Optimization/MOE-grad-conflict-routing/scripts/run.py --config configs/multitask_textcls_sst2_yelp_amazon_real.yaml --set model.backbone_backend=hf --set model.hf_load_pretrained=true --set model.backbone=deberta --set model.hf_pretrained_name=microsoft/deberta-v3-base --set data.train_size=64 --set data.val_size=32 --set seed=1 --set method.name=ours --set train.steps=5 --set train.eval_every_steps=5 --set method.ours.use_load_norm=true --set method.ours.eps=1e-08 --set method.ours.lambda_align=0.001 --set train.lr=2e-05 --out /share/home/yuli0398/Optimization/MOE-grad-conflict-routing/runs/paper_suite_smoke/appendix/multi_dataset_real/deberta/hpo/ours/trial_runs/coarse_default/ours_s1.json --curve_out /share/home/yuli0398/Optimization/MOE-grad-conflict-routing/runs/paper_suite_smoke/appendix/multi_dataset_real/deberta/hpo/ours/trial_runs/coarse_default/ours_s1_curve.csv",
+    "curve_path": "/share/home/yuli0398/Optimization/MOE-grad-conflict-routing/runs/paper_suite_smoke/appendix/multi_dataset_real/deberta/hpo/ours/trial_runs/coarse_default/ours_s1_curve.csv",
+    "cwd": "/share/home/yuli0398/Optimization/MOE-grad-conflict-routing",
+    "runtime": {
+      "cuda_available": true,
+      "cuda_device_count": 1,
+      "cuda_device_names": [
+        "NVIDIA GeForce RTX 3090"
+      ],
+      "platform": "Linux-5.15.0-139-generic-x86_64-with-glibc2.31",
+      "python_version": "3.10.18",
+      "torch_version": "2.5.1+cu121"
+    },
+    "summary_path": "/share/home/yuli0398/Optimization/MOE-grad-conflict-routing/runs/paper_suite_smoke/appendix/multi_dataset_real/deberta/hpo/ours/trial_runs/coarse_default/ours_s1.json"
+  },
+  "resolved_config": {
+    "data": {
+      "datasets": [
+        "glue/sst2",
+        "yelp_polarity",
+        "amazon_polarity"
+      ],
+      "source": "textcls",
+      "train_size": 64,
+      "val_size": 32
+    },
+    "method": {
+      "baseline_cagrad": {
+        "c": 0.4,
+        "eps": 1e-08,
+        "inner_lr": 0.1,
+        "inner_steps": 10
+      },
+      "name": "ours",
+      "ours": {
+        "eps": 1e-08,
+        "lambda_align": 0.001,
+        "micro_batch_size": 8,
+        "use_load_norm": true
+      }
+    },
+    "model": {
+      "backbone": "deberta",
+      "backbone_backend": "hf",
+      "dropout": 0.1,
+      "expert_type": "lora",
+      "ffn_hidden_dim": 3072,
+      "hf_load_pretrained": true,
+      "hf_local_files_only": false,
+      "hf_pretrained_name": "microsoft/deberta-v3-base",
+      "hidden_dim": 768,
+      "lora_alpha": 16.0,
+      "lora_rank": 16,
+      "max_seq_len": 128,
+      "num_classes": 2,
+      "num_experts": 4,
+      "routing_mode": "softmax",
+      "seq_len": 128,
+      "top_k": 2,
+      "vocab_size": 30522
+    },
+    "seed": 1,
+    "train": {
+      "batch_size": 8,
+      "eval_every_steps": 5,
+      "eval_max_batches": 0,
+      "grad_clip": 1.0,
+      "log_every": 10,
+      "lr": 2e-05,
+      "micro_batch_size": 4,
+      "steps": 5,
+      "weight_decay": 0.01
+    }
+  },
+  "resolved_config_sha256": "4bc090a000e777bbf8ac3ab2950d948c7b7094382df88548472ece3437249a85",
+  "seed": 1
+}

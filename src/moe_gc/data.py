@@ -204,10 +204,35 @@ def _hf_tokenizer_name(model_cfg: dict) -> str:
         "roberta": "roberta-base",
         "deberta": "microsoft/deberta-v3-base",
         "distilbert": "distilbert-base-uncased",
+        "gpt2": "gpt2",
     }
     if bb not in mp:
         raise RuntimeError(f"unsupported backbone for hf tokenizer: {bb!r}")
     return mp[bb]
+
+
+def _build_hf_tokenizer(model_cfg: dict):
+    try:
+        from transformers import AutoTokenizer  # type: ignore
+    except Exception as e:
+        raise RuntimeError(
+            "transformers is required for model.backbone_backend=hf"
+        ) from e
+    tok_name = _hf_tokenizer_name(model_cfg)
+    tok = AutoTokenizer.from_pretrained(
+        tok_name,
+        local_files_only=bool(model_cfg.get("hf_local_files_only", False)),
+        use_fast=True,
+    )
+    if tok.pad_token_id is None:
+        if tok.eos_token is not None:
+            tok.pad_token = tok.eos_token
+        else:
+            raise RuntimeError(
+                f"tokenizer {tok_name!r} has no pad_token/eos_token; "
+                "please set model.hf_pretrained_name to a tokenizer with a padding token"
+            )
+    return tok, tok_name
 
 
 def _build_glue_task_loader(
@@ -256,18 +281,7 @@ def _build_glue_task_loader(
     num_labels = int(ds["train"].features["label"].num_classes)
 
     if backend == "hf":
-        try:
-            from transformers import AutoTokenizer  # type: ignore
-        except Exception as e:
-            raise RuntimeError(
-                "transformers is required for model.backbone_backend=hf"
-            ) from e
-        tok_name = _hf_tokenizer_name(mcfg)
-        tok = AutoTokenizer.from_pretrained(
-            tok_name,
-            local_files_only=bool(mcfg.get("hf_local_files_only", False)),
-            use_fast=True,
-        )
+        tok, tok_name = _build_hf_tokenizer(mcfg)
 
         def encode_row(ex: dict) -> Tuple[List[int], List[int]]:
             a = str(ex[s1_key])
@@ -282,6 +296,8 @@ def _build_glue_task_loader(
             return list(out["input_ids"]), list(out["attention_mask"])
 
     else:
+        tok_name = ""
+
         def encode_row(ex: dict) -> Tuple[List[int], List[int]]:
             a = str(ex[s1_key])
             b = None if s2_key is None else str(ex[s2_key])
@@ -319,6 +335,7 @@ def _build_glue_task_loader(
         "num_labels": int(num_labels),
         "train_size": int(len(tr_ds)),
         "val_size": int(len(va_ds)),
+        "tokenizer_name": tok_name,
         "train_loader_shuffle_seed": int(tr_loader_seed),
         "val_loader_shuffle_seed": int(va_loader_seed),
     }
@@ -365,6 +382,230 @@ def build_glue_multitask(cfg: dict) -> MultiTaskData:
     return MultiTaskData(train_loaders=train_loaders, val_loaders=val_loaders, reproducibility=repro)
 
 
+def _normalize_textcls_task(name: str) -> str:
+    s = str(name).strip().lower()
+    if s.startswith("hf_textcls/"):
+        s = s.split("/", 1)[1]
+    aliases = {
+        "sst2": "glue/sst2",
+        "glue/sst2": "glue/sst2",
+        "glue_sst2": "glue/sst2",
+        "yelp": "yelp_polarity",
+        "yelp_polarity": "yelp_polarity",
+        "amazon": "amazon_polarity",
+        "amazon_polarity": "amazon_polarity",
+    }
+    if s not in aliases:
+        raise RuntimeError(f"unsupported text classification dataset: {name!r}")
+    return aliases[s]
+
+
+def _textcls_spec(name: str) -> Dict[str, Any]:
+    task = _normalize_textcls_task(name)
+    if task == "glue/sst2":
+        return {
+            "task": task,
+            "dataset": "glue",
+            "subset": "sst2",
+            "train_split": "train",
+            "val_split": "validation",
+            "text_a": "sentence",
+            "text_b": None,
+            "num_labels": 2,
+        }
+    if task == "yelp_polarity":
+        return {
+            "task": task,
+            "dataset": "yelp_polarity",
+            "subset": None,
+            "train_split": "train",
+            "val_split": "test",
+            "text_a": "text",
+            "text_b": None,
+            "num_labels": 2,
+        }
+    if task == "amazon_polarity":
+        return {
+            "task": task,
+            "dataset": "amazon_polarity",
+            "subset": None,
+            "train_split": "train",
+            "val_split": "test",
+            "text_a": "title",
+            "text_b": "content",
+            "num_labels": 2,
+        }
+    raise RuntimeError(f"unsupported text classification dataset: {name!r}")
+
+
+def _build_textcls_task_loader(
+    *,
+    task_name: str,
+    cfg: dict,
+) -> Tuple[DataLoader, DataLoader, int, Dict[str, Any]]:
+    try:
+        from datasets import load_dataset  # type: ignore
+    except Exception as e:
+        raise RuntimeError(
+            "datasets is required for data.source=textcls. Install with: pip install datasets"
+        ) from e
+
+    dcfg = cfg["data"]
+    mcfg = cfg["model"]
+    tcfg = cfg["train"]
+    batch_size = int(tcfg["batch_size"])
+    seq_len = int(mcfg.get("seq_len", mcfg.get("max_seq_len", 64)))
+    backend = str(mcfg.get("backbone_backend", "tiny")).strip().lower()
+    vocab_size = int(mcfg.get("vocab_size", 30522))
+
+    spec = _textcls_spec(task_name)
+    dataset_name = str(spec["dataset"])
+    subset = spec["subset"]
+    ds = load_dataset(dataset_name, subset) if subset is not None else load_dataset(dataset_name)
+
+    train_split = str(spec["train_split"])
+    val_split = str(spec["val_split"])
+    if train_split not in ds:
+        raise RuntimeError(f"{dataset_name} missing train split={train_split!r}")
+    tr = ds[train_split]
+    val_from_train = False
+    if val_split in ds:
+        va = ds[val_split]
+    else:
+        val_from_train = True
+        val_ratio = float(dcfg.get("val_from_train_ratio", 0.1))
+        if not (0.0 < val_ratio < 1.0):
+            raise RuntimeError(f"data.val_from_train_ratio must be in (0,1), got {val_ratio}")
+        split_seed = int(cfg.get("seed", 0)) + 73 + _task_seed(task_name)
+        split = tr.train_test_split(test_size=val_ratio, seed=int(split_seed))
+        tr = split["train"]
+        va = split["test"]
+
+    train_cap = int(dcfg.get("train_size", 0))
+    val_cap = int(dcfg.get("val_size", 0))
+    if train_cap > 0 and train_cap < len(tr):
+        tr = tr.select(range(train_cap))
+    if val_cap > 0 and val_cap < len(va):
+        va = va.select(range(val_cap))
+
+    num_labels = int(spec["num_labels"])
+    try:
+        feat = ds[train_split].features.get("label")  # type: ignore[attr-defined]
+        feat_nlab = getattr(feat, "num_classes", None)
+        if isinstance(feat_nlab, int) and feat_nlab > 0 and int(feat_nlab) != num_labels:
+            raise RuntimeError(
+                f"textcls {task_name!r} label classes mismatch: expected {num_labels}, got {feat_nlab}"
+            )
+    except Exception:
+        pass
+
+    text_a_key = str(spec["text_a"])
+    text_b_key = spec["text_b"]
+    if backend == "hf":
+        tok, tok_name = _build_hf_tokenizer(mcfg)
+
+        def encode_row(ex: dict) -> Tuple[List[int], List[int]]:
+            a = str(ex.get(text_a_key, ""))
+            b = None if text_b_key is None else str(ex.get(str(text_b_key), ""))
+            out = tok(
+                a,
+                b,
+                truncation=True,
+                max_length=seq_len,
+                padding="max_length",
+            )
+            return list(out["input_ids"]), list(out["attention_mask"])
+
+    else:
+        tok_name = ""
+
+        def encode_row(ex: dict) -> Tuple[List[int], List[int]]:
+            a = str(ex.get(text_a_key, ""))
+            b = None if text_b_key is None else str(ex.get(str(text_b_key), ""))
+            return _encode_pair_hashed(a, b, seq_len, vocab_size)
+
+    def to_tensor_dataset(split) -> TensorDataset:
+        ids_all: List[List[int]] = []
+        mask_all: List[List[int]] = []
+        y_all: List[int] = []
+        for ex in split:
+            y = int(ex["label"])
+            if y < 0:
+                continue
+            ids, mask = encode_row(ex)
+            ids_all.append(ids)
+            mask_all.append(mask)
+            y_all.append(y)
+        input_ids = torch.tensor(ids_all, dtype=torch.long)
+        attention_mask = torch.tensor(mask_all, dtype=torch.long)
+        labels = torch.tensor(y_all, dtype=torch.long)
+        return TensorDataset(input_ids, attention_mask, labels)
+
+    tr_ds = to_tensor_dataset(tr)
+    va_ds = to_tensor_dataset(va)
+
+    tr_loader_seed = _loader_seed(cfg, task=task_name, split="train")
+    va_loader_seed = _loader_seed(cfg, task=task_name, split="val")
+    tr_gen = torch.Generator().manual_seed(int(tr_loader_seed))
+    va_gen = torch.Generator().manual_seed(int(va_loader_seed))
+    tr_loader = DataLoader(tr_ds, batch_size=batch_size, shuffle=True, drop_last=False, generator=tr_gen)
+    va_loader = DataLoader(va_ds, batch_size=batch_size, shuffle=False, drop_last=False, generator=va_gen)
+    repro = {
+        "task": str(spec["task"]),
+        "dataset": dataset_name,
+        "subset": subset,
+        "num_labels": int(num_labels),
+        "train_split": train_split,
+        "val_split": (f"train_split({dcfg.get('val_from_train_ratio', 0.1)})" if val_from_train else val_split),
+        "train_size": int(len(tr_ds)),
+        "val_size": int(len(va_ds)),
+        "tokenizer_name": tok_name,
+        "train_loader_shuffle_seed": int(tr_loader_seed),
+        "val_loader_shuffle_seed": int(va_loader_seed),
+    }
+    return tr_loader, va_loader, num_labels, repro
+
+
+def build_textcls_multitask(cfg: dict) -> MultiTaskData:
+    dcfg = cfg["data"]
+    mcfg = cfg["model"]
+    tasks: List[str] = list(dcfg.get("datasets", []))
+    if not tasks:
+        raise RuntimeError("data.datasets cannot be empty for data.source=textcls")
+
+    train_loaders: Dict[str, DataLoader] = {}
+    val_loaders: Dict[str, DataLoader] = {}
+    num_labels_ref: Optional[int] = None
+    repro: Dict[str, Any] = {
+        "data_source": "textcls",
+        "global_seed": int(cfg.get("seed", 0)),
+        "loader_seed_base": int(dcfg.get("loader_seed_base", int(cfg.get("seed", 0)) * 1009 + 17)),
+        "task_order": list(tasks),
+        "tasks": {},
+    }
+    for name in tasks:
+        tr_loader, va_loader, nlab, task_repro = _build_textcls_task_loader(task_name=name, cfg=cfg)
+        train_loaders[name] = tr_loader
+        val_loaders[name] = va_loader
+        repro["tasks"][name] = task_repro
+        if num_labels_ref is None:
+            num_labels_ref = int(nlab)
+        elif int(nlab) != int(num_labels_ref):
+            raise RuntimeError(
+                f"mixed label count across textcls datasets: got {nlab} for {name}, expected {num_labels_ref}"
+            )
+
+    if num_labels_ref is None:
+        raise RuntimeError("no text classification dataset loaded")
+    cfg_num_classes = int(mcfg.get("num_classes", num_labels_ref))
+    if cfg_num_classes != int(num_labels_ref):
+        raise RuntimeError(
+            f"model.num_classes={cfg_num_classes} mismatch textcls labels={num_labels_ref}. "
+            "Please set model.num_classes accordingly."
+        )
+    return MultiTaskData(train_loaders=train_loaders, val_loaders=val_loaders, reproducibility=repro)
+
+
 def build_multitask_data(cfg: dict) -> MultiTaskData:
     dcfg = cfg.get("data", {}) if isinstance(cfg.get("data", {}), dict) else {}
     source = str(dcfg.get("source", "synthetic")).strip().lower()
@@ -372,4 +613,6 @@ def build_multitask_data(cfg: dict) -> MultiTaskData:
         return build_synthetic_multitask(cfg)
     if source == "glue":
         return build_glue_multitask(cfg)
-    raise RuntimeError(f"unsupported data.source={source!r}, expected synthetic|glue")
+    if source in {"textcls", "hf_textcls"}:
+        return build_textcls_multitask(cfg)
+    raise RuntimeError(f"unsupported data.source={source!r}, expected synthetic|glue|textcls")

@@ -21,6 +21,21 @@ def _masked_mean(x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
     return s / d
 
 
+def _masked_last(x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+    # Decode-only style pooling: take the last non-pad token state.
+    idx = mask.to(dtype=torch.long).sum(dim=1).clamp_min(1) - 1
+    b = torch.arange(x.shape[0], device=x.device)
+    return x[b, idx, :]
+
+
+def _infer_hidden_dim(cfg: object, fallback: int) -> int:
+    for key in ("hidden_size", "n_embd", "dim", "d_model"):
+        v = getattr(cfg, key, None)
+        if isinstance(v, int) and v > 0:
+            return int(v)
+    return int(fallback)
+
+
 class TinyTransformerBackbone(nn.Module):
     """
     Lightweight transformer-style backbone with family presets:
@@ -109,14 +124,17 @@ class HFBackbone(nn.Module):
     ) -> None:
         super().__init__()
         fam = str(family).strip().lower()
-        if fam not in {"roberta", "deberta", "distilbert"}:
+        if fam not in {"roberta", "deberta", "distilbert", "gpt2"}:
             raise RuntimeError(f"unsupported backbone family={family!r}")
+        self.family = fam
         try:
             from transformers import (
                 DebertaV2Config,
                 DebertaV2Model,
                 DistilBertConfig,
                 DistilBertModel,
+                GPT2Config,
+                GPT2Model,
                 RobertaConfig,
                 RobertaModel,
             )
@@ -130,6 +148,7 @@ class HFBackbone(nn.Module):
             "roberta": "roberta-base",
             "deberta": "microsoft/deberta-v3-base",
             "distilbert": "distilbert-base-uncased",
+            "gpt2": "gpt2",
         }
         chosen_name = str(pretrained_name or name_map[fam])
 
@@ -137,6 +156,7 @@ class HFBackbone(nn.Module):
             from transformers import AutoModel
 
             self.model = AutoModel.from_pretrained(chosen_name, local_files_only=bool(local_files_only))
+            self.hidden_dim = _infer_hidden_dim(getattr(self.model, "config", object()), int(hidden_dim))
             return
 
         heads = _pick_heads(hidden_dim, 8)
@@ -168,7 +188,7 @@ class HFBackbone(nn.Module):
                 type_vocab_size=0,
             )
             self.model = DebertaV2Model(cfg)
-        else:
+        elif fam == "distilbert":
             cfg = DistilBertConfig(
                 vocab_size=vocab_size,
                 max_position_embeddings=max_seq_len + 2,
@@ -180,10 +200,27 @@ class HFBackbone(nn.Module):
                 attention_dropout=dropout,
             )
             self.model = DistilBertModel(cfg)
+        else:
+            vocab_size = max(int(vocab_size), 50257)
+            cfg = GPT2Config(
+                vocab_size=vocab_size,
+                n_positions=max_seq_len,
+                n_ctx=max_seq_len,
+                n_embd=hidden_dim,
+                n_layer=6,
+                n_head=_pick_heads(hidden_dim, 12),
+                resid_pdrop=dropout,
+                embd_pdrop=dropout,
+                attn_pdrop=dropout,
+            )
+            self.model = GPT2Model(cfg)
+        self.hidden_dim = _infer_hidden_dim(getattr(self.model, "config", object()), int(hidden_dim))
 
     def forward(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
         out = self.model(input_ids=input_ids, attention_mask=attention_mask)
         last = out.last_hidden_state
+        if self.family == "gpt2":
+            return _masked_last(last, attention_mask)
         return _masked_mean(last, attention_mask)
 
 
@@ -230,6 +267,9 @@ class MoEClassifier(nn.Module):
         num_experts = int(model_cfg.get("num_experts", 4))
         dropout = float(model_cfg.get("dropout", 0.1))
 
+        if backbone == "gpt2" and backend != "hf":
+            raise RuntimeError("gpt2 backbone requires model.backbone_backend=hf")
+
         if backend == "tiny":
             self.backbone = TinyTransformerBackbone(
                 family=backbone,
@@ -254,7 +294,8 @@ class MoEClassifier(nn.Module):
             )
         else:
             raise RuntimeError(f"backbone_backend must be tiny/hf, got: {backend!r}")
-        self.router = nn.Linear(hidden_dim, num_experts)
+        hidden_dim_eff = int(getattr(self.backbone, "hidden_dim", hidden_dim))
+        self.router = nn.Linear(hidden_dim_eff, num_experts)
         self.routing_mode = str(model_cfg.get("routing_mode", "softmax")).strip().lower()
         self.top_k = int(model_cfg.get("top_k", 2))
         if self.routing_mode not in {"softmax", "topk"}:
@@ -267,17 +308,17 @@ class MoEClassifier(nn.Module):
             raise RuntimeError(f"expert_type must be ffn/lora, got: {self.expert_type!r}")
 
         if self.expert_type == "ffn":
-            ffn_hidden = int(model_cfg.get("ffn_hidden_dim", hidden_dim * 4))
+            ffn_hidden = int(model_cfg.get("ffn_hidden_dim", hidden_dim_eff * 4))
             self.base_head = None
             self.experts = nn.ModuleList(
-                [FFNExpert(hidden_dim, num_classes, ffn_hidden, dropout) for _ in range(num_experts)]
+                [FFNExpert(hidden_dim_eff, num_classes, ffn_hidden, dropout) for _ in range(num_experts)]
             )
         else:
             rank = int(model_cfg.get("lora_rank", 16))
             alpha = float(model_cfg.get("lora_alpha", 16.0))
-            self.base_head = nn.Linear(hidden_dim, num_classes)
+            self.base_head = nn.Linear(hidden_dim_eff, num_classes)
             self.experts = nn.ModuleList(
-                [LoRAExpert(hidden_dim, num_classes, rank, alpha, dropout) for _ in range(num_experts)]
+                [LoRAExpert(hidden_dim_eff, num_classes, rank, alpha, dropout) for _ in range(num_experts)]
             )
 
     def route_probs_from_hidden(self, h: torch.Tensor) -> torch.Tensor:

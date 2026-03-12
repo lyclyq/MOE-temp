@@ -330,6 +330,7 @@ def _train_step_ours(
     micro_bs = _resolve_micro_batch_size(cfg)
     lam = float(ours_cfg.get("lambda_align", 0.0))
     eps = float(ours_cfg.get("eps", 1.0e-8))
+    use_load_norm = bool(ours_cfg.get("use_load_norm", True))
 
     base_model = _unwrap_model(model)
     all_params = base_model.trainable_params()
@@ -397,7 +398,11 @@ def _train_step_ours(
 
         G = probs.t() @ grads
         load = probs.sum(dim=0) + eps
-        per_expert_conflict = -(G.pow(2).sum(dim=1) / load)
+        if use_load_norm:
+            per_expert_conflict = -(G.pow(2).sum(dim=1) / load)
+        else:
+            # Ablation: remove load normalization and keep only raw squared-norm reward.
+            per_expert_conflict = -(G.pow(2).sum(dim=1))
         lnorm = per_expert_conflict.sum()
 
         for p in task_params:
