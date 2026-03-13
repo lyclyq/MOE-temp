@@ -67,6 +67,20 @@ def _merge_best_configs(
     hpo_out = out_dir / "hpo"
     hpo_out.mkdir(parents=True, exist_ok=True)
     (hpo_out / "best_configs.json").write_text(json.dumps(merged, indent=2, sort_keys=True), encoding="utf-8")
+    subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "scripts" / "export_hpo_best_params.py"),
+            "--hpo_dir",
+            str(hpo_out),
+            "--out_csv",
+            str(hpo_out / "hpo_best_params.csv"),
+            "--out_png",
+            str(hpo_out / "hpo_best_scores.png"),
+        ],
+        cwd=str(ROOT),
+        check=True,
+    )
     return merged
 
 
@@ -179,6 +193,20 @@ def _run_plotters(*, final_dir: Path, seeds: List[int], skip_mvp: bool) -> None:
             seeds_csv,
             "--out_csv",
             str(final_dir / "router_load_summary.csv"),
+        ],
+        [
+            sys.executable,
+            str(ROOT / "scripts" / "plot_paper_metrics.py"),
+            "--final_dir",
+            str(final_dir),
+            "--methods",
+            methods_csv,
+            "--seeds",
+            seeds_csv,
+            "--band",
+            "std",
+            "--out_dir",
+            str(final_dir),
         ],
     ]
     if not skip_mvp:

@@ -530,6 +530,22 @@ def _run_plotters(
     ]
     subprocess.run(cmd_load, cwd=str(ROOT), check=True)
 
+    cmd_paper = [
+        sys.executable,
+        str(ROOT / "scripts" / "plot_paper_metrics.py"),
+        "--final_dir",
+        str(final_dir),
+        "--methods",
+        methods_csv,
+        "--seeds",
+        seeds_csv,
+        "--band",
+        "std",
+        "--out_dir",
+        str(final_dir),
+    ]
+    subprocess.run(cmd_paper, cwd=str(ROOT), check=True)
+
     if skip_mvp:
         return
     cmd_mvp = [
@@ -547,6 +563,20 @@ def _run_plotters(
         str(final_dir),
     ]
     subprocess.run(cmd_mvp, cwd=str(ROOT), check=True)
+
+
+def _run_hpo_exports(hpo_root: Path) -> None:
+    cmd = [
+        sys.executable,
+        str(ROOT / "scripts" / "export_hpo_best_params.py"),
+        "--hpo_dir",
+        str(hpo_root),
+        "--out_csv",
+        str(hpo_root / "hpo_best_params.csv"),
+        "--out_png",
+        str(hpo_root / "hpo_best_scores.png"),
+    ]
+    subprocess.run(cmd, cwd=str(ROOT), check=True)
 
 
 def main() -> None:
@@ -779,6 +809,7 @@ def main() -> None:
 
     _write_csv(hpo_root / "hpo_agg_all_methods.csv", global_hpo_rows)
     (hpo_root / "best_configs.json").write_text(json.dumps(all_best_cfg, indent=2, sort_keys=True), encoding="utf-8")
+    _run_hpo_exports(hpo_root)
 
     final_jobs: List[RunJob] = []
     order = 0

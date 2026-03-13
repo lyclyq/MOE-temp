@@ -8,8 +8,9 @@ GPUS="${GPUS:-0,1}"
 HPO_SEEDS="${HPO_SEEDS:-2,3}"
 FINAL_SEEDS="${FINAL_SEEDS:-2,3,5,7,11}"
 HPO_TRIALS="${HPO_TRIALS:-96}"
-HPO_STEPS="${HPO_STEPS:-50}"
-FINAL_STEPS="${FINAL_STEPS:-600}"
+HPO_STEPS_SINGLE="${HPO_STEPS_SINGLE:-${HPO_STEPS:-100}}"
+HPO_STEPS_MULTI="${HPO_STEPS_MULTI:-${HPO_STEPS:-80}}"
+FINAL_STEPS="${FINAL_STEPS:-800}"
 EVAL_EVERY="${EVAL_EVERY:-50}"
 LOCAL_TOPK="${LOCAL_TOPK:-3}"
 LOCAL_GRID_POINTS="${LOCAL_GRID_POINTS:-3}"
@@ -41,6 +42,14 @@ declare -a RANK_SETTINGS=(
 for item in "${RANK_SETTINGS[@]}"; do
   setting="${item%%:*}"
   cfg="${item#*:}"
+  case "$setting" in
+    single_*) HPO_STEPS_CUR="$HPO_STEPS_SINGLE" ;;
+    multi_*) HPO_STEPS_CUR="$HPO_STEPS_MULTI" ;;
+    *)
+      echo "unsupported appendix setting=$setting" >&2
+      exit 1
+      ;;
+  esac
   for r in "${RANK_ARR[@]}"; do
     rk="$(echo "$r" | xargs)"
     out="${SUITE_ROOT}/appendix/rank/${setting}_${BACKBONE}_r${rk}"
@@ -52,7 +61,7 @@ for item in "${RANK_SETTINGS[@]}"; do
       --hpo_seeds "$HPO_SEEDS" \
       --final_seeds "$FINAL_SEEDS" \
       --hpo_trials "$HPO_TRIALS" \
-      --hpo_steps "$HPO_STEPS" \
+      --hpo_steps "$HPO_STEPS_CUR" \
       --final_steps "$FINAL_STEPS" \
       --eval_every "$EVAL_EVERY" \
       --local_topk "$LOCAL_TOPK" \
@@ -79,7 +88,7 @@ for expert in lora ffn; do
     --hpo_seeds "$HPO_SEEDS" \
     --final_seeds "$FINAL_SEEDS" \
     --hpo_trials "$HPO_TRIALS" \
-    --hpo_steps "$HPO_STEPS" \
+    --hpo_steps "$HPO_STEPS_MULTI" \
     --final_steps "$FINAL_STEPS" \
     --eval_every "$EVAL_EVERY" \
     --local_topk "$LOCAL_TOPK" \
@@ -103,7 +112,7 @@ python scripts/pipeline_hpo_final_plot.py \
   --hpo_seeds "$HPO_SEEDS" \
   --final_seeds "$FINAL_SEEDS" \
   --hpo_trials "$HPO_TRIALS" \
-  --hpo_steps "$HPO_STEPS" \
+  --hpo_steps "$HPO_STEPS_MULTI" \
   --final_steps "$FINAL_STEPS" \
   --eval_every "$EVAL_EVERY" \
   --local_topk "$LOCAL_TOPK" \

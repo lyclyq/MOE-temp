@@ -34,8 +34,9 @@ model:
 
 train:
   steps: 120
-  batch_size: 64
-  micro_batch_size: 8 # shared by ours and baselines for fair routing granularity
+  batch_size: 64 # effective per-task batch size used by HPO and one logical update
+  micro_batch_size: 8 # logical micro batch for vote/conflict partition; do not change this by GPU staging
+  device_batch_size: 0 # 0/auto = GPU staging chunk, grouped by whole micro-batches, no effect on effective batch semantics
   eval_every_steps: 30
   eval_max_batches: 0
   lr: 1.0e-3

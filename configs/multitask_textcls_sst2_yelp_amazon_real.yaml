@@ -35,8 +35,9 @@ model:
 
 train:
   steps: 500
-  batch_size: 8
-  micro_batch_size: 4
+  batch_size: 8 # effective per-task batch size; one task batch from each dataset forms one update
+  micro_batch_size: 4 # logical micro batch for vote/conflict partition
+  device_batch_size: 0 # GPU staging chunk only; grouped by whole logical micro-batches
   eval_every_steps: 50
   eval_max_batches: 0
   lr: 2.0e-5

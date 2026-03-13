@@ -8,8 +8,9 @@ GPUS="${GPUS:-0,1}"
 HPO_SEEDS="${HPO_SEEDS:-2,3}"
 FINAL_SEEDS="${FINAL_SEEDS:-2,3,5,7,11}"
 HPO_TRIALS="${HPO_TRIALS:-96}"
-HPO_STEPS="${HPO_STEPS:-50}"
-FINAL_STEPS="${FINAL_STEPS:-600}"
+HPO_STEPS_SINGLE="${HPO_STEPS_SINGLE:-${HPO_STEPS:-100}}"
+HPO_STEPS_MULTI="${HPO_STEPS_MULTI:-${HPO_STEPS:-80}}"
+FINAL_STEPS="${FINAL_STEPS:-800}"
 EVAL_EVERY="${EVAL_EVERY:-50}"
 LOCAL_TOPK="${LOCAL_TOPK:-3}"
 LOCAL_GRID_POINTS="${LOCAL_GRID_POINTS:-3}"
@@ -41,8 +42,14 @@ for item in "${SETTINGS[@]}"; do
   name="${item%%:*}"
   cfg="${item#*:}"
   case "$name" in
-    single_mrpc) REUSE_OUT="${SUITE_ROOT}/single_task/${BACKBONE}_mrpc" ;;
-    multi_glue3) REUSE_OUT="${SUITE_ROOT}/multi_task/glue3_${BACKBONE}" ;;
+    single_mrpc)
+      REUSE_OUT="${SUITE_ROOT}/single_task/${BACKBONE}_mrpc"
+      HPO_STEPS_CUR="$HPO_STEPS_SINGLE"
+      ;;
+    multi_glue3)
+      REUSE_OUT="${SUITE_ROOT}/multi_task/glue3_${BACKBONE}"
+      HPO_STEPS_CUR="$HPO_STEPS_MULTI"
+      ;;
     *)
       echo "unsupported ablation reuse source for setting=$name" >&2
       exit 1
@@ -61,7 +68,7 @@ for item in "${SETTINGS[@]}"; do
     --hpo_seeds "$HPO_SEEDS" \
     --final_seeds "$FINAL_SEEDS" \
     --hpo_trials "$HPO_TRIALS" \
-    --hpo_steps "$HPO_STEPS" \
+    --hpo_steps "$HPO_STEPS_CUR" \
     --final_steps "$FINAL_STEPS" \
     --eval_every "$EVAL_EVERY" \
     --local_topk "$LOCAL_TOPK" \

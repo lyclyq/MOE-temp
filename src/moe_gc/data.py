@@ -85,6 +85,7 @@ def build_synthetic_multitask(cfg: dict) -> MultiTaskData:
     vocab_size = int(mcfg.get("vocab_size", 30522))
     num_classes = int(mcfg["num_classes"])
     seed = int(cfg.get("seed", 0))
+    pin_memory = bool(torch.cuda.is_available())
 
     train_loaders: Dict[str, DataLoader] = {}
     val_loaders: Dict[str, DataLoader] = {}
@@ -121,8 +122,22 @@ def build_synthetic_multitask(cfg: dict) -> MultiTaskData:
         va_loader_seed = _loader_seed(cfg, task=task, split="val")
         tr_gen = torch.Generator().manual_seed(int(tr_loader_seed))
         va_gen = torch.Generator().manual_seed(int(va_loader_seed))
-        train_loaders[task] = DataLoader(tr, batch_size=batch_size, shuffle=True, drop_last=False, generator=tr_gen)
-        val_loaders[task] = DataLoader(va, batch_size=batch_size, shuffle=False, drop_last=False, generator=va_gen)
+        train_loaders[task] = DataLoader(
+            tr,
+            batch_size=batch_size,
+            shuffle=True,
+            drop_last=False,
+            generator=tr_gen,
+            pin_memory=pin_memory,
+        )
+        val_loaders[task] = DataLoader(
+            va,
+            batch_size=batch_size,
+            shuffle=False,
+            drop_last=False,
+            generator=va_gen,
+            pin_memory=pin_memory,
+        )
         repro["tasks"][task] = {
             "task_seed_offset": int(task_off),
             "synthetic_rule_seed": int(777_777 + task_off),
@@ -251,6 +266,7 @@ def _build_glue_task_loader(
     mcfg = cfg["model"]
     tcfg = cfg["train"]
     batch_size = int(tcfg["batch_size"])
+    pin_memory = bool(torch.cuda.is_available())
     seq_len = int(mcfg.get("seq_len", mcfg.get("max_seq_len", 64)))
     backend = str(mcfg.get("backbone_backend", "tiny")).strip().lower()
     vocab_size = int(mcfg.get("vocab_size", 30522))
@@ -328,8 +344,22 @@ def _build_glue_task_loader(
     va_loader_seed = _loader_seed(cfg, task=task_name, split="val")
     tr_gen = torch.Generator().manual_seed(int(tr_loader_seed))
     va_gen = torch.Generator().manual_seed(int(va_loader_seed))
-    tr_loader = DataLoader(tr_ds, batch_size=batch_size, shuffle=True, drop_last=False, generator=tr_gen)
-    va_loader = DataLoader(va_ds, batch_size=batch_size, shuffle=False, drop_last=False, generator=va_gen)
+    tr_loader = DataLoader(
+        tr_ds,
+        batch_size=batch_size,
+        shuffle=True,
+        drop_last=False,
+        generator=tr_gen,
+        pin_memory=pin_memory,
+    )
+    va_loader = DataLoader(
+        va_ds,
+        batch_size=batch_size,
+        shuffle=False,
+        drop_last=False,
+        generator=va_gen,
+        pin_memory=pin_memory,
+    )
     repro = {
         "task": str(task_name),
         "num_labels": int(num_labels),
@@ -454,6 +484,7 @@ def _build_textcls_task_loader(
     mcfg = cfg["model"]
     tcfg = cfg["train"]
     batch_size = int(tcfg["batch_size"])
+    pin_memory = bool(torch.cuda.is_available())
     seq_len = int(mcfg.get("seq_len", mcfg.get("max_seq_len", 64)))
     backend = str(mcfg.get("backbone_backend", "tiny")).strip().lower()
     vocab_size = int(mcfg.get("vocab_size", 30522))
@@ -548,8 +579,22 @@ def _build_textcls_task_loader(
     va_loader_seed = _loader_seed(cfg, task=task_name, split="val")
     tr_gen = torch.Generator().manual_seed(int(tr_loader_seed))
     va_gen = torch.Generator().manual_seed(int(va_loader_seed))
-    tr_loader = DataLoader(tr_ds, batch_size=batch_size, shuffle=True, drop_last=False, generator=tr_gen)
-    va_loader = DataLoader(va_ds, batch_size=batch_size, shuffle=False, drop_last=False, generator=va_gen)
+    tr_loader = DataLoader(
+        tr_ds,
+        batch_size=batch_size,
+        shuffle=True,
+        drop_last=False,
+        generator=tr_gen,
+        pin_memory=pin_memory,
+    )
+    va_loader = DataLoader(
+        va_ds,
+        batch_size=batch_size,
+        shuffle=False,
+        drop_last=False,
+        generator=va_gen,
+        pin_memory=pin_memory,
+    )
     repro = {
         "task": str(spec["task"]),
         "dataset": dataset_name,
