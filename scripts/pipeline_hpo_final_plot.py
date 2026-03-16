@@ -3,24 +3,492 @@ from __future__ import annotations
 
 import argparse
 import csv
+import fcntl
 import itertools
 import json
 import math
 import os
 import random
+import signal
 import statistics
 import subprocess
 import sys
+import tempfile
+import threading
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from collections import deque
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, as_completed, wait
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Sequence, Tuple
+from typing import Any, Dict, Iterator, List, Sequence, Tuple
 
 from path_utils import resolve_runs_path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+_STOP_EVENT = threading.Event()
+_ACTIVE_PROCS_LOCK = threading.Lock()
+_ACTIVE_PROCS: set[subprocess.Popen[Any]] = set()
+
+
+def _register_proc(proc: subprocess.Popen[Any]) -> None:
+    with _ACTIVE_PROCS_LOCK:
+        _ACTIVE_PROCS.add(proc)
+
+
+def _unregister_proc(proc: subprocess.Popen[Any]) -> None:
+    with _ACTIVE_PROCS_LOCK:
+        _ACTIVE_PROCS.discard(proc)
+
+
+def _snapshot_active_procs() -> List[subprocess.Popen[Any]]:
+    with _ACTIVE_PROCS_LOCK:
+        return [p for p in _ACTIVE_PROCS if p.poll() is None]
+
+
+def _terminate_active_processes(phase_name: str, grace_seconds: float = 2.0) -> None:
+    procs = _snapshot_active_procs()
+    if not procs:
+        return
+    print(f"[{phase_name}] interrupt: stopping {len(procs)} active process(es)")
+
+    # Jobs run in their own process groups; signal the whole group first.
+    for proc in procs:
+        if proc.poll() is not None:
+            continue
+        try:
+            os.killpg(proc.pid, signal.SIGINT)
+        except ProcessLookupError:
+            continue
+        except Exception:
+            pass
+
+    deadline = time.time() + max(0.0, float(grace_seconds))
+    while time.time() < deadline:
+        alive = [p for p in procs if p.poll() is None]
+        if not alive:
+            return
+        time.sleep(0.1)
+
+    for proc in procs:
+        if proc.poll() is not None:
+            continue
+        try:
+            os.killpg(proc.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            continue
+        except Exception:
+            pass
+
+    deadline = time.time() + 1.0
+    while time.time() < deadline:
+        alive = [p for p in procs if p.poll() is None]
+        if not alive:
+            return
+        time.sleep(0.1)
+
+    for proc in procs:
+        if proc.poll() is not None:
+            continue
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            continue
+        except Exception:
+            pass
+
+
+_MEMORY_GROUP_KEYS: Tuple[str, ...] = (
+    "method.name",
+    "train.batch_size",
+    "train.device_batch_size",
+    "train.micro_batch_size",
+    "method.ours.micro_batch_size",
+    "model.backbone_backend",
+    "model.backbone",
+    "model.hf_pretrained_name",
+    "model.hf_load_pretrained",
+    "model.hidden_dim",
+    "model.seq_len",
+    "model.max_seq_len",
+    "model.num_experts",
+    "model.expert_type",
+    "model.lora_rank",
+    "model.lora_alpha",
+    "model.ffn_hidden_dim",
+    "model.routing_mode",
+    "model.top_k",
+    "data.source",
+    "data.datasets",
+    "data.train_size",
+    "data.val_size",
+)
+
+
+def _ts_now() -> float:
+    return float(time.time())
+
+
+def _append_jsonl(path: Path, payload: Dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(payload, sort_keys=True))
+        f.write("\n")
+
+
+class ProgressTracker:
+    def __init__(self, status_root: Path) -> None:
+        self._lock = threading.Lock()
+        self.status_root = status_root
+        self.progress_path = status_root / "progress.json"
+        self.events_path = status_root / "progress_events.jsonl"
+        self.failures_path = status_root / "worker_failures.jsonl"
+        self._started_at = _ts_now()
+        self._total_jobs = 0
+        self._completed_jobs = 0
+        self._failed_jobs = 0
+        self._current_phase = ""
+        self._flush(event="init", extra={})
+
+    def _snapshot(self) -> Dict[str, Any]:
+        elapsed = max(0.0, _ts_now() - self._started_at)
+        pct = 0.0
+        if self._total_jobs > 0:
+            pct = 100.0 * float(self._completed_jobs) / float(self._total_jobs)
+        eta = None
+        if self._completed_jobs > 0 and self._total_jobs > self._completed_jobs:
+            rate = float(self._completed_jobs) / max(elapsed, 1.0e-9)
+            rem = float(self._total_jobs - self._completed_jobs)
+            eta = float(rem / max(rate, 1.0e-9))
+        return {
+            "started_at_epoch": float(self._started_at),
+            "updated_at_epoch": float(_ts_now()),
+            "elapsed_sec": float(elapsed),
+            "current_phase": self._current_phase,
+            "total_jobs": int(self._total_jobs),
+            "completed_jobs": int(self._completed_jobs),
+            "failed_jobs": int(self._failed_jobs),
+            "percent": float(min(100.0, max(0.0, pct))),
+            "eta_sec": None if eta is None else float(max(0.0, eta)),
+        }
+
+    def _flush(self, *, event: str, extra: Dict[str, Any]) -> None:
+        self.status_root.mkdir(parents=True, exist_ok=True)
+        snap = self._snapshot()
+        self.progress_path.write_text(json.dumps(snap, indent=2, sort_keys=True), encoding="utf-8")
+        evt = {
+            "ts_epoch": float(_ts_now()),
+            "event": str(event),
+            **extra,
+            "progress": {
+                "completed_jobs": int(snap["completed_jobs"]),
+                "total_jobs": int(snap["total_jobs"]),
+                "percent": float(snap["percent"]),
+                "phase": str(snap["current_phase"]),
+            },
+        }
+        _append_jsonl(self.events_path, evt)
+
+    def note(self, event: str, extra: Dict[str, Any]) -> None:
+        with self._lock:
+            self._flush(event=event, extra=dict(extra))
+
+    def set_phase(self, phase_name: str) -> None:
+        with self._lock:
+            self._current_phase = str(phase_name)
+            self._flush(event="phase_start", extra={"phase": str(phase_name)})
+
+    def clear_phase(self, phase_name: str) -> None:
+        with self._lock:
+            self._current_phase = ""
+            self._flush(event="phase_end", extra={"phase": str(phase_name)})
+
+    def add_planned_jobs(self, phase_name: str, n: int) -> None:
+        if n <= 0:
+            return
+        with self._lock:
+            self._total_jobs += int(n)
+            self._flush(event="plan_add", extra={"phase": str(phase_name), "planned_add": int(n)})
+
+    def job_done(self, *, phase_name: str, job: "RunJob", gpu: int, reused: bool) -> None:
+        with self._lock:
+            self._completed_jobs += 1
+            self._flush(
+                event="job_done",
+                extra={
+                    "phase": str(phase_name),
+                    "method": str(job.method_alias),
+                    "candidate": str(job.candidate_id),
+                    "seed": int(job.seed),
+                    "gpu": int(gpu),
+                    "reused": bool(reused),
+                },
+            )
+
+    def job_retry(
+        self,
+        *,
+        phase_name: str,
+        job: "RunJob",
+        gpu: int,
+        attempt: int,
+        retries: int,
+        err: str,
+        log_path: Path,
+    ) -> None:
+        payload = {
+            "ts_epoch": float(_ts_now()),
+            "phase": str(phase_name),
+            "method": str(job.method_alias),
+            "candidate": str(job.candidate_id),
+            "seed": int(job.seed),
+            "gpu": int(gpu),
+            "attempt": int(attempt),
+            "max_retries": int(retries),
+            "error": str(err),
+            "log_path": str(log_path),
+        }
+        with self._lock:
+            _append_jsonl(self.failures_path, payload)
+            self._flush(event="job_retry", extra=payload)
+
+    def job_failed(self, *, phase_name: str, job: "RunJob", gpu: int, err: str, log_path: Path) -> None:
+        payload = {
+            "phase": str(phase_name),
+            "method": str(job.method_alias),
+            "candidate": str(job.candidate_id),
+            "seed": int(job.seed),
+            "gpu": int(gpu),
+            "error": str(err),
+            "log_path": str(log_path),
+        }
+        with self._lock:
+            self._failed_jobs += 1
+            _append_jsonl(self.failures_path, {"ts_epoch": float(_ts_now()), **payload})
+            self._flush(event="job_failed", extra=payload)
+
+
+def _safe_token(text: str) -> str:
+    out: List[str] = []
+    for ch in str(text):
+        if ch.isalnum() or ch in {"-", "_", "."}:
+            out.append(ch)
+        else:
+            out.append("_")
+    s = "".join(out).strip("_")
+    return s or "x"
+
+
+def _parse_scalar(raw: str) -> Any:
+    t = str(raw).strip()
+    if not t:
+        return ""
+    lo = t.lower()
+    if lo == "true":
+        return True
+    if lo == "false":
+        return False
+    if lo == "null" or lo == "none":
+        return None
+    try:
+        if t.startswith("0") and len(t) > 1 and t[1].isdigit():
+            raise ValueError
+        return int(t)
+    except Exception:
+        pass
+    try:
+        return float(t)
+    except Exception:
+        pass
+    if (t.startswith("[") and t.endswith("]")) or (t.startswith("{") and t.endswith("}")):
+        try:
+            return json.loads(t)
+        except Exception:
+            return t
+    return t
+
+
+def _set_kv_to_map(set_kv: Sequence[str]) -> Dict[str, str]:
+    out: Dict[str, str] = {}
+    for kv in set_kv:
+        if "=" not in str(kv):
+            continue
+        k, v = str(kv).split("=", 1)
+        key = k.strip()
+        if not key:
+            continue
+        out[key] = v.strip()
+    return out
+
+
+def _normalize_json_value(v: Any) -> Any:
+    if isinstance(v, dict):
+        return {str(k): _normalize_json_value(v[k]) for k in sorted(v.keys(), key=lambda x: str(x))}
+    if isinstance(v, (list, tuple)):
+        return [_normalize_json_value(x) for x in v]
+    if isinstance(v, (int, float, bool)) or v is None:
+        return v
+    return str(v)
+
+
+def _effective_cfg_value(base_cfg: Dict[str, Any], kv_map: Dict[str, str], key: str) -> Any:
+    if key in kv_map:
+        return _parse_scalar(kv_map[key])
+    return _get_by_path(base_cfg, key)
+
+
+def _memory_group_payload(
+    *,
+    phase_name: str,
+    job: "RunJob",
+    base_cfg: Dict[str, Any],
+) -> Dict[str, Any]:
+    kv_map = _set_kv_to_map(job.set_kv)
+    features: Dict[str, Any] = {}
+    for k in _MEMORY_GROUP_KEYS:
+        features[k] = _normalize_json_value(_effective_cfg_value(base_cfg, kv_map, k))
+    return {
+        "phase": str(phase_name),
+        "method_alias": str(job.method_alias),
+        "features": features,
+    }
+
+
+def _memory_group_key(payload: Dict[str, Any]) -> str:
+    return json.dumps(payload, sort_keys=True, separators=(",", ":"))
+
+
+def _load_probe_cache(path: Path) -> Dict[str, Any]:
+    if not path.exists():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    if isinstance(data, dict):
+        return data
+    return {}
+
+
+def _save_probe_cache(path: Path, cache: Dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(cache, indent=2, sort_keys=True), encoding="utf-8")
+
+
+def _query_gpu_total_memory_mb(gpu: int) -> float:
+    cmd = [
+        "nvidia-smi",
+        "--query-gpu=memory.total",
+        "--format=csv,noheader,nounits",
+        "-i",
+        str(int(gpu)),
+    ]
+    try:
+        out = subprocess.check_output(cmd, text=True, stderr=subprocess.DEVNULL)
+    except Exception:
+        return 0.0
+    for line in str(out).splitlines():
+        t = line.strip()
+        if not t:
+            continue
+        try:
+            return float(t)
+        except Exception:
+            continue
+    return 0.0
+
+
+def _probe_group_peak_mem_mb(
+    *,
+    phase_name: str,
+    rep_job: "RunJob",
+    config: str,
+    gpu: int,
+    probe_steps: int,
+    logs_root: Path,
+    probe_timeout_sec: float,
+) -> float:
+    probe_set_map = _set_kv_to_map(rep_job.set_kv)
+    probe_set_map["train.steps"] = str(max(1, int(probe_steps)))
+    probe_set_map["train.eval_every_steps"] = "0"
+    probe_set = [f"{k}={v}" for k, v in probe_set_map.items()]
+
+    with tempfile.TemporaryDirectory(prefix="moe_probe_") as td:
+        td_path = Path(td)
+        out_json = td_path / "probe_summary.json"
+        out_curve = td_path / "probe_curve.csv"
+        log_path = logs_root / "probe" / f"{_safe_token(phase_name)}__gpu{int(gpu)}.log"
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+
+        cmd: List[str] = [
+            sys.executable,
+            str(ROOT / "scripts" / "run.py"),
+            "--config",
+            str(config),
+        ]
+        for kv in probe_set:
+            cmd.extend(["--set", kv])
+        cmd.extend(["--out", str(out_json), "--curve_out", str(out_curve)])
+
+        env = dict(os.environ)
+        env["CUDA_VISIBLE_DEVICES"] = str(int(gpu))
+
+        with log_path.open("w", encoding="utf-8") as lf:
+            lf.write(f"[probe] phase={phase_name} gpu={gpu}\n")
+            lf.write("[probe] cmd=\n")
+            lf.write(" ".join(cmd) + "\n")
+            lf.flush()
+            proc = subprocess.Popen(
+                cmd,
+                cwd=str(ROOT),
+                env=env,
+                stdout=lf,
+                stderr=subprocess.STDOUT,
+                start_new_session=True,
+            )
+            _register_proc(proc)
+            try:
+                rc = proc.wait(timeout=max(30.0, float(probe_timeout_sec)))
+            except subprocess.TimeoutExpired:
+                try:
+                    os.killpg(proc.pid, signal.SIGTERM)
+                except Exception:
+                    pass
+                try:
+                    proc.wait(timeout=5.0)
+                except Exception:
+                    pass
+                raise RuntimeError(f"probe timeout phase={phase_name} gpu={gpu}")
+            finally:
+                _unregister_proc(proc)
+
+        if int(rc) != 0:
+            raise RuntimeError(f"probe failed rc={rc} phase={phase_name} gpu={gpu} log={log_path}")
+
+        payload = _read_summary(out_json)
+        overhead = dict(payload.get("overhead", {}))
+        peak = float(overhead.get("peak_cuda_memory_mb", 0.0))
+        if peak <= 0.0:
+            peak = 1.0
+        return float(peak)
+
+
+@contextmanager
+def _file_lock(path: Path, *, tracker: ProgressTracker | None, label: str) -> Iterator[None]:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if tracker is not None:
+        tracker.note("lock_wait", {"lock": str(label), "path": str(path)})
+    with path.open("a+", encoding="utf-8") as fh:
+        fcntl.flock(fh.fileno(), fcntl.LOCK_EX)
+        if tracker is not None:
+            tracker.note("lock_acquired", {"lock": str(label), "path": str(path)})
+        try:
+            yield
+        finally:
+            fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
+            if tracker is not None:
+                tracker.note("lock_released", {"lock": str(label), "path": str(path)})
 
 
 def _parse_csv_ints(s: str) -> List[int]:
@@ -219,68 +687,119 @@ def _candidate_fingerprint(params: Dict[str, float]) -> str:
     return "|".join(f"{k}={v:.12g}" for k, v in items)
 
 
-def _build_coarse_candidates(
+def _default_params(
     *,
     spec: MethodSpec,
     base_cfg: Dict[str, Any],
-    trials: int,
+) -> Dict[str, float]:
+    out: Dict[str, float] = {}
+    for kb in spec.knobs:
+        cur = _get_by_path(base_cfg, kb.key)
+        if isinstance(cur, (int, float)):
+            out[kb.key] = float(kb.clip(float(cur)))
+            continue
+        if kb.scale == "log":
+            out[kb.key] = float(kb.clip(math.sqrt(kb.lo * kb.hi)))
+        else:
+            out[kb.key] = float(kb.clip(0.5 * (kb.lo + kb.hi)))
+    return out
+
+
+def _split_coordinate_trials(total_trials: int, knob_count: int) -> List[int]:
+    if knob_count <= 0:
+        raise RuntimeError("knob_count must be > 0")
+    # Each coordinate round needs one anchor and at least one perturbed point.
+    if total_trials < 2 * knob_count:
+        raise RuntimeError(
+            f"hpo_trials={total_trials} is too small for coordinate search with {knob_count} knobs; "
+            f"need at least {2 * knob_count}"
+        )
+    base = int(total_trials) // int(knob_count)
+    rem = int(total_trials) % int(knob_count)
+    out = [base + (1 if i < rem else 0) for i in range(knob_count)]
+    if any(x < 2 for x in out):
+        raise RuntimeError(f"invalid coordinate trial split: {out}")
+    return out
+
+
+def _san_key(k: str) -> str:
+    return str(k).replace(".", "_")
+
+
+def _build_coordinate_candidates(
+    *,
+    spec: MethodSpec,
+    base_params: Dict[str, float],
+    knob_idx: int,
+    trials_this_round: int,
     seed: int,
 ) -> List[Candidate]:
-    if trials <= 0:
-        raise RuntimeError("hpo trials must be > 0")
+    if knob_idx < 0 or knob_idx >= len(spec.knobs):
+        raise RuntimeError(f"invalid knob_idx={knob_idx}")
+    if trials_this_round <= 0:
+        raise RuntimeError("trials_this_round must be > 0")
+
+    kb = spec.knobs[knob_idx]
+    stage = f"coord:{kb.key}"
     rng = random.Random(int(seed))
     out: List[Candidate] = []
     seen: set[str] = set()
 
-    default_params: Dict[str, float] = {}
-    for kb in spec.knobs:
-        cur = _get_by_path(base_cfg, kb.key)
-        if isinstance(cur, (int, float)):
-            v = kb.clip(float(cur))
-        else:
-            if kb.scale == "log":
-                v = kb.clip(math.sqrt(kb.lo * kb.hi))
-            else:
-                v = kb.clip(0.5 * (kb.lo + kb.hi))
-        default_params[kb.key] = float(v)
-    fp = _candidate_fingerprint(default_params)
-    seen.add(fp)
-    out.append(Candidate(cid="coarse_default", stage="coarse", params=default_params))
+    anchor = {k: float(v) for k, v in base_params.items()}
+    fp0 = _candidate_fingerprint(anchor)
+    seen.add(fp0)
+    out.append(Candidate(cid=f"coord_{knob_idx+1:02d}_anchor", stage=stage, params=anchor))
 
     idx = 0
-    while len(out) < trials:
-        cand = {kb.key: float(kb.sample(rng)) for kb in spec.knobs}
+    while len(out) < trials_this_round:
+        cand = {k: float(v) for k, v in base_params.items()}
+        cand[kb.key] = float(kb.sample(rng))
         fp = _candidate_fingerprint(cand)
         if fp in seen:
             continue
         seen.add(fp)
-        out.append(Candidate(cid=f"coarse_{idx:03d}", stage="coarse", params=cand))
+        out.append(Candidate(cid=f"coord_{knob_idx+1:02d}_{_san_key(kb.key)}_{idx:03d}", stage=stage, params=cand))
         idx += 1
     return out
 
 
-def _build_local_candidates(
+def _build_local_variance_topk_candidates(
     *,
     spec: MethodSpec,
-    top_candidates: Sequence[Candidate],
+    center_params: Dict[str, float],
+    topk_knob_keys: Sequence[str],
     already_seen: set[str],
     grid_points: int,
 ) -> List[Candidate]:
+    if grid_points <= 0:
+        raise RuntimeError("grid_points must be > 0")
+    if not topk_knob_keys:
+        return []
+
+    kb_by_key = {kb.key: kb for kb in spec.knobs}
+    chosen_keys = [k for k in topk_knob_keys if k in kb_by_key]
+    if not chosen_keys:
+        return []
+
+    grids: List[List[float]] = []
+    chosen_specs: List[KnobSpec] = []
+    for key in chosen_keys:
+        kb = kb_by_key[key]
+        chosen_specs.append(kb)
+        grids.append(kb.local_points(center=float(center_params[key]), points=grid_points))
+
     out: List[Candidate] = []
-    local_idx = 0
-    for rank, cand in enumerate(top_candidates):
-        grids: List[List[float]] = []
-        for kb in spec.knobs:
-            center = float(cand.params[kb.key])
-            grids.append(kb.local_points(center=center, points=grid_points))
-        for vals in itertools.product(*grids):
-            cc = {kb.key: float(vals[i]) for i, kb in enumerate(spec.knobs)}
-            fp = _candidate_fingerprint(cc)
-            if fp in already_seen:
-                continue
-            already_seen.add(fp)
-            out.append(Candidate(cid=f"local_t{rank+1}_{local_idx:03d}", stage="local", params=cc))
-            local_idx += 1
+    idx = 0
+    for vals in itertools.product(*grids):
+        cand = {k: float(v) for k, v in center_params.items()}
+        for i, kb in enumerate(chosen_specs):
+            cand[kb.key] = float(vals[i])
+        fp = _candidate_fingerprint(cand)
+        if fp in already_seen:
+            continue
+        already_seen.add(fp)
+        out.append(Candidate(cid=f"local_var_topk_{idx:03d}", stage="local_var_topk", params=cand))
+        idx += 1
     return out
 
 
@@ -322,7 +841,17 @@ def _summary_is_valid(path: Path, curve_path: Path) -> bool:
     return True
 
 
-def _run_job_once(job: RunJob, config: str, gpu: int) -> None:
+def _job_log_path(logs_root: Path, phase_name: str, job: RunJob, gpu: int, attempt: int) -> Path:
+    phase_tok = _safe_token(phase_name)
+    cand_tok = _safe_token(job.candidate_id)
+    name = f"{job.method_alias}__{cand_tok}__s{int(job.seed)}__a{int(attempt)}.log"
+    return logs_root / f"gpu{int(gpu)}" / phase_tok / name
+
+
+def _run_job_once(job: RunJob, config: str, gpu: int, *, log_path: Path) -> None:
+    if _STOP_EVENT.is_set():
+        raise RuntimeError("interrupted")
+
     cmd: List[str] = [
         sys.executable,
         str(ROOT / "scripts" / "run.py"),
@@ -335,10 +864,48 @@ def _run_job_once(job: RunJob, config: str, gpu: int) -> None:
 
     env = dict(os.environ)
     env["CUDA_VISIBLE_DEVICES"] = str(gpu)
-    subprocess.run(cmd, cwd=str(ROOT), env=env, check=True)
+
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    with log_path.open("w", encoding="utf-8") as lf:
+        lf.write(
+            f"[run] method={job.method_alias} candidate={job.candidate_id} seed={job.seed} "
+            f"steps={job.steps} gpu={gpu}\n"
+        )
+        lf.write("[run] cmd=\n")
+        lf.write(" ".join(cmd) + "\n")
+        lf.flush()
+
+        proc = subprocess.Popen(
+            cmd,
+            cwd=str(ROOT),
+            env=env,
+            stdout=lf,
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
+        _register_proc(proc)
+        try:
+            rc = proc.wait()
+        finally:
+            _unregister_proc(proc)
+
+    if rc != 0:
+        raise subprocess.CalledProcessError(rc, cmd)
 
 
-def _run_job_with_retry(job: RunJob, config: str, gpu: int, retries: int) -> RunResult:
+def _run_job_with_retry(
+    job: RunJob,
+    config: str,
+    gpu: int,
+    retries: int,
+    *,
+    phase_name: str,
+    logs_root: Path,
+    progress: ProgressTracker | None,
+) -> RunResult:
+    if _STOP_EVENT.is_set():
+        raise RuntimeError("interrupted")
+
     reused = False
     if _summary_is_valid(job.out_json, job.out_curve):
         reused = True
@@ -347,12 +914,26 @@ def _run_job_with_retry(job: RunJob, config: str, gpu: int, retries: int) -> Run
         job.out_curve.parent.mkdir(parents=True, exist_ok=True)
         last_err: Exception | None = None
         for attempt in range(retries + 1):
+            log_path = _job_log_path(logs_root, phase_name, job, gpu, attempt)
             try:
-                _run_job_once(job, config=config, gpu=gpu)
+                _run_job_once(job, config=config, gpu=gpu, log_path=log_path)
                 last_err = None
                 break
             except Exception as e:  # noqa: BLE001
                 last_err = e
+                err_text = f"{type(e).__name__}: {e}"
+                if progress is not None:
+                    progress.job_retry(
+                        phase_name=phase_name,
+                        job=job,
+                        gpu=gpu,
+                        attempt=attempt + 1,
+                        retries=retries,
+                        err=err_text,
+                        log_path=log_path,
+                    )
+                if _STOP_EVENT.is_set():
+                    break
                 if attempt >= retries:
                     break
                 print(
@@ -382,6 +963,192 @@ def _run_job_with_retry(job: RunJob, config: str, gpu: int, retries: int) -> Run
     )
 
 
+def _resolve_group_slots(
+    *,
+    phase_name: str,
+    payload: Dict[str, Any],
+    jobs: Sequence[RunJob],
+    config: str,
+    gpus: Sequence[int],
+    logs_root: Path,
+    progress: ProgressTracker | None,
+    probe_cache: Dict[str, Any],
+    probe_cache_path: Path,
+    gpu_mem_util_ratio: float,
+    probe_steps: int,
+    probe_timeout_sec: float,
+    disable_mem_probe: bool,
+    max_workers_per_gpu: int,
+) -> Dict[int, int]:
+    key = _memory_group_key(payload)
+    ratio = max(0.10, min(0.98, float(gpu_mem_util_ratio)))
+
+    cached = probe_cache.get(key)
+    peak_mb = 0.0
+    if isinstance(cached, dict):
+        try:
+            peak_mb = float(cached.get("peak_mem_mb", 0.0))
+        except Exception:
+            peak_mb = 0.0
+
+    need_exec = any(not _summary_is_valid(j.out_json, j.out_curve) for j in jobs)
+
+    if peak_mb <= 0.0 and need_exec and (not disable_mem_probe):
+        rep = jobs[0]
+        probe_gpu = int(gpus[0])
+        try:
+            peak_mb = _probe_group_peak_mem_mb(
+                phase_name=phase_name,
+                rep_job=rep,
+                config=config,
+                gpu=probe_gpu,
+                probe_steps=max(1, int(probe_steps)),
+                logs_root=logs_root,
+                probe_timeout_sec=float(probe_timeout_sec),
+            )
+        except Exception as e:  # noqa: BLE001
+            peak_mb = 0.0
+            if progress is not None:
+                progress.note(
+                    "probe_fallback",
+                    {
+                        "phase": str(phase_name),
+                        "error": f"{type(e).__name__}: {e}",
+                        "fallback_slots": 1,
+                    },
+                )
+        if peak_mb > 0.0:
+            probe_cache[key] = {
+                "ts_epoch": float(_ts_now()),
+                "phase": str(phase_name),
+                "payload": payload,
+                "peak_mem_mb": float(peak_mb),
+            }
+            _save_probe_cache(probe_cache_path, probe_cache)
+
+    slots: Dict[int, int] = {}
+    for g in gpus:
+        total_mb = _query_gpu_total_memory_mb(int(g))
+        if peak_mb > 0.0 and total_mb > 0.0:
+            val = int((float(total_mb) * ratio) // max(1.0, float(peak_mb)))
+            slots[int(g)] = max(1, val)
+        else:
+            slots[int(g)] = 1
+        if max_workers_per_gpu > 0:
+            slots[int(g)] = max(1, min(int(max_workers_per_gpu), int(slots[int(g)])))
+
+    if progress is not None:
+        progress.note(
+            "group_slots",
+            {
+                "phase": str(phase_name),
+                "group_key": key,
+                "peak_mem_mb": float(peak_mb),
+                "slots": {str(k): int(v) for k, v in sorted(slots.items())},
+                "need_exec": bool(need_exec),
+            },
+        )
+    return slots
+
+
+def _run_jobs_group(
+    *,
+    indexed_jobs: Sequence[Tuple[int, RunJob]],
+    config: str,
+    gpus: Sequence[int],
+    slots_by_gpu: Dict[int, int],
+    retries: int,
+    phase_name: str,
+    logs_root: Path,
+    progress: ProgressTracker | None,
+    out: List[RunResult | None],
+) -> None:
+    if not indexed_jobs:
+        return
+
+    caps = {int(g): max(1, int(slots_by_gpu.get(int(g), 1))) for g in gpus}
+    max_workers = max(1, int(sum(caps.values())))
+    print(f"[{phase_name}] group launch jobs={len(indexed_jobs)} slots={caps}")
+
+    ex = ThreadPoolExecutor(max_workers=max_workers)
+    pending: deque[Tuple[int, RunJob]] = deque(indexed_jobs)
+    in_flight_by_gpu = {int(g): 0 for g in gpus}
+    dispatched_by_gpu = {int(g): 0 for g in gpus}
+    fut_meta: Dict[Any, Tuple[int, RunJob, int, Path]] = {}
+    wait_shutdown = True
+
+    def _pick_gpu() -> int | None:
+        available = [int(g) for g in gpus if int(in_flight_by_gpu[int(g)]) < int(caps[int(g)])]
+        if not available:
+            return None
+        return min(
+            available,
+            key=lambda gi: (
+                float(in_flight_by_gpu[gi]) / float(max(1, caps[gi])),
+                int(dispatched_by_gpu[gi]),
+                int(gi),
+            ),
+        )
+
+    try:
+        while pending or fut_meta:
+            while pending:
+                chosen_gpu = _pick_gpu()
+                if chosen_gpu is None:
+                    break
+                idx, job = pending.popleft()
+                in_flight_by_gpu[chosen_gpu] += 1
+                dispatched_by_gpu[chosen_gpu] += 1
+                fut = ex.submit(
+                    _run_job_with_retry,
+                    job,
+                    config,
+                    chosen_gpu,
+                    retries,
+                    phase_name=phase_name,
+                    logs_root=logs_root,
+                    progress=progress,
+                )
+                fut_meta[fut] = (idx, job, chosen_gpu, _job_log_path(logs_root, phase_name, job, chosen_gpu, retries))
+
+            if not fut_meta:
+                continue
+
+            done_set, _ = wait(list(fut_meta.keys()), return_when=FIRST_COMPLETED)
+            for fut in done_set:
+                idx, job, gpu, log_path = fut_meta.pop(fut)
+                in_flight_by_gpu[gpu] = max(0, int(in_flight_by_gpu[gpu]) - 1)
+                try:
+                    rr = fut.result()
+                except Exception as e:  # noqa: BLE001
+                    if progress is not None:
+                        progress.job_failed(
+                            phase_name=phase_name,
+                            job=job,
+                            gpu=gpu,
+                            err=f"{type(e).__name__}: {e}",
+                            log_path=log_path,
+                        )
+                    _STOP_EVENT.set()
+                    wait_shutdown = False
+                    for ff in fut_meta:
+                        ff.cancel()
+                    _terminate_active_processes(phase_name=phase_name)
+                    raise
+                out[idx] = rr
+                if progress is not None:
+                    progress.job_done(phase_name=phase_name, job=job, gpu=gpu, reused=bool(rr.reused))
+    except KeyboardInterrupt:
+        _STOP_EVENT.set()
+        wait_shutdown = False
+        for ff in fut_meta:
+            ff.cancel()
+        _terminate_active_processes(phase_name=phase_name)
+        raise
+    finally:
+        ex.shutdown(wait=wait_shutdown, cancel_futures=True)
+
+
 def _run_jobs_parallel(
     *,
     jobs: Sequence[RunJob],
@@ -389,6 +1156,16 @@ def _run_jobs_parallel(
     gpus: Sequence[int],
     retries: int,
     phase_name: str,
+    base_cfg: Dict[str, Any],
+    logs_root: Path,
+    progress: ProgressTracker | None,
+    probe_cache: Dict[str, Any],
+    probe_cache_path: Path,
+    gpu_mem_util_ratio: float,
+    probe_steps: int,
+    probe_timeout_sec: float,
+    disable_mem_probe: bool,
+    max_workers_per_gpu: int,
 ) -> List[RunResult]:
     if not jobs:
         return []
@@ -396,28 +1173,79 @@ def _run_jobs_parallel(
         raise RuntimeError("empty gpus list")
 
     print(f"[{phase_name}] launch jobs={len(jobs)} gpus={list(gpus)}")
+    if progress is not None:
+        progress.add_planned_jobs(phase_name, len(jobs))
+        progress.set_phase(phase_name)
+
     out: List[RunResult | None] = [None] * len(jobs)
-    with ThreadPoolExecutor(max_workers=len(gpus)) as ex:
-        fut_to_idx = {}
-        for i, job in enumerate(jobs):
-            gpu = int(gpus[i % len(gpus)])
-            fut = ex.submit(_run_job_with_retry, job, config, gpu, retries)
-            fut_to_idx[fut] = i
 
-        done = 0
-        for fut in as_completed(fut_to_idx):
-            i = fut_to_idx[fut]
-            try:
-                out[i] = fut.result()
-            except Exception:  # noqa: BLE001
-                for ff in fut_to_idx:
-                    ff.cancel()
-                raise
-            done += 1
-            if done % 8 == 0 or done == len(jobs):
-                print(f"[{phase_name}] done {done}/{len(jobs)}")
+    groups: Dict[str, Dict[str, Any]] = {}
+    for i, job in enumerate(jobs):
+        payload = _memory_group_payload(phase_name=phase_name, job=job, base_cfg=base_cfg)
+        key = _memory_group_key(payload)
+        rec = groups.setdefault(key, {"payload": payload, "items": []})
+        rec["items"].append((i, job))
 
-    return [x for x in out if x is not None]
+    try:
+        for key, rec in groups.items():
+            indexed_jobs = list(rec["items"])
+            payload = dict(rec["payload"])
+            slots_by_gpu = _resolve_group_slots(
+                phase_name=phase_name,
+                payload=payload,
+                jobs=[x[1] for x in indexed_jobs],
+                config=config,
+                gpus=gpus,
+                logs_root=logs_root,
+                progress=progress,
+                probe_cache=probe_cache,
+                probe_cache_path=probe_cache_path,
+                gpu_mem_util_ratio=float(gpu_mem_util_ratio),
+                probe_steps=int(probe_steps),
+                probe_timeout_sec=float(probe_timeout_sec),
+                disable_mem_probe=bool(disable_mem_probe),
+                max_workers_per_gpu=int(max_workers_per_gpu),
+            )
+            if progress is not None:
+                progress.note(
+                    "group_start",
+                    {
+                        "phase": str(phase_name),
+                        "group_key": str(key),
+                        "group_jobs": int(len(indexed_jobs)),
+                        "slots": {str(k): int(v) for k, v in sorted(slots_by_gpu.items())},
+                    },
+                )
+            _run_jobs_group(
+                indexed_jobs=indexed_jobs,
+                config=config,
+                gpus=gpus,
+                slots_by_gpu=slots_by_gpu,
+                retries=int(retries),
+                phase_name=phase_name,
+                logs_root=logs_root,
+                progress=progress,
+                out=out,
+            )
+            if progress is not None:
+                progress.note(
+                    "group_end",
+                    {
+                        "phase": str(phase_name),
+                        "group_key": str(key),
+                        "group_jobs": int(len(indexed_jobs)),
+                    },
+                )
+    finally:
+        if progress is not None:
+            progress.clear_phase(phase_name)
+
+    result = [x for x in out if x is not None]
+    if len(result) != len(jobs):
+        raise RuntimeError(
+            f"phase={phase_name} expected {len(jobs)} results but got {len(result)}; aborting to avoid bad aggregation"
+        )
+    return result
 
 
 def _agg_candidate_scores(
@@ -580,21 +1408,28 @@ def _run_hpo_exports(hpo_root: Path) -> None:
 
 
 def main() -> None:
-    p = argparse.ArgumentParser(description="Generic pipeline: HPO (coarse+local) -> final -> plot.")
+    _STOP_EVENT.clear()
+
+    p = argparse.ArgumentParser(description="Generic pipeline: coordinate HPO + variance-topk local grid -> final -> plot.")
     p.add_argument("--config", type=str, required=True)
     p.add_argument("--out_dir", type=str, required=True, help="relative path will be placed under runs/")
     p.add_argument("--methods", type=str, default="baseline,cagrad,ours")
     p.add_argument("--gpus", type=str, default="0,1")
     p.add_argument("--hpo_seeds", type=str, default="2,3")
     p.add_argument("--final_seeds", type=str, default="2,3,5,7,11")
-    p.add_argument("--hpo_trials", type=int, default=96, help="coarse random trials per method")
+    p.add_argument("--hpo_trials", type=int, default=96, help="total coordinate trials per method (split across knobs)")
     p.add_argument("--hpo_steps", type=int, default=50)
     p.add_argument("--final_steps", type=int, default=600)
     p.add_argument("--eval_every", type=int, default=50)
     p.add_argument("--local_topk", type=int, default=3)
     p.add_argument("--local_grid_points", type=int, default=3)
     p.add_argument("--hpo_seed_base", type=int, default=20260311)
-    p.add_argument("--retries", type=int, default=1)
+    p.add_argument("--retries", type=int, default=2, help="max retry count after a failed worker run")
+    p.add_argument("--gpu_mem_util_ratio", type=float, default=0.85, help="target gpu memory occupancy ratio for slot sizing")
+    p.add_argument("--probe_steps", type=int, default=2, help="quick probe steps per memory group")
+    p.add_argument("--probe_timeout_sec", type=float, default=600.0)
+    p.add_argument("--disable_mem_probe", action="store_true")
+    p.add_argument("--max_workers_per_gpu", type=int, default=0, help="0 means no explicit cap")
     p.add_argument("--skip_mvp", action="store_true")
     p.add_argument("--set", action="append", default=[], help="extra key=value overrides passed to run.py")
     args = p.parse_args()
@@ -617,6 +1452,13 @@ def main() -> None:
     out_dir = resolve_runs_path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    status_root = out_dir / "status"
+    logs_root = out_dir / "logs" / "gpu"
+    locks_root = out_dir / "locks"
+    status_root.mkdir(parents=True, exist_ok=True)
+    logs_root.mkdir(parents=True, exist_ok=True)
+    locks_root.mkdir(parents=True, exist_ok=True)
+
     manifest = {
         "config": str(args.config),
         "methods": [s.alias for s in specs],
@@ -629,7 +1471,14 @@ def main() -> None:
         "local_topk": int(args.local_topk),
         "local_grid_points": int(args.local_grid_points),
         "hpo_seed_base": int(args.hpo_seed_base),
+        "hpo_strategy": "coordinate_then_variance_topk_local_grid",
         "extra_set": list(args.set),
+        "retries": int(args.retries),
+        "gpu_mem_util_ratio": float(args.gpu_mem_util_ratio),
+        "probe_steps": int(args.probe_steps),
+        "probe_timeout_sec": float(args.probe_timeout_sec),
+        "disable_mem_probe": bool(args.disable_mem_probe),
+        "max_workers_per_gpu": int(args.max_workers_per_gpu),
     }
     _ensure_manifest(out_dir / "pipeline_manifest.json", manifest)
 
@@ -639,191 +1488,296 @@ def main() -> None:
     hpo_root.mkdir(parents=True, exist_ok=True)
     final_root.mkdir(parents=True, exist_ok=True)
 
+    progress = ProgressTracker(status_root)
+    probe_cache_path = status_root / "memory_probe_cache.json"
+    probe_cache = _load_probe_cache(probe_cache_path)
+
+    progress.note(
+        "pipeline_start",
+        {
+            "out_dir": str(out_dir),
+            "status_root": str(status_root),
+            "logs_root": str(logs_root),
+            "locks_root": str(locks_root),
+            "methods": [s.alias for s in specs],
+            "gpus": [int(x) for x in gpus],
+        },
+    )
+
     all_best_cfg: Dict[str, Dict[str, Any]] = {}
     global_hpo_rows: List[Dict[str, Any]] = []
 
     for mi, spec in enumerate(specs):
         print(f"\n[method] {spec.alias} -> {spec.method_name}")
+        progress.note("method_start", {"method": spec.alias, "phase": "hpo"})
+
         method_dir = hpo_root / spec.alias
         method_dir.mkdir(parents=True, exist_ok=True)
 
-        coarse = _build_coarse_candidates(
-            spec=spec,
-            base_cfg=base_cfg,
-            trials=int(args.hpo_trials),
-            seed=int(args.hpo_seed_base) + mi * 10007,
-        )
+        with _file_lock(
+            locks_root / f"hpo_method_{_safe_token(spec.alias)}.lock",
+            tracker=progress,
+            label=f"hpo_method:{spec.alias}",
+        ):
+            trial_alloc = _split_coordinate_trials(int(args.hpo_trials), len(spec.knobs))
+            current_params = _default_params(spec=spec, base_cfg=base_cfg)
 
-        jobs: List[RunJob] = []
-        order = 0
-        for cand in coarse:
-            for sd in hpo_seeds:
-                run_dir = method_dir / "trial_runs" / cand.cid
-                out_json = run_dir / f"{spec.alias}_s{sd}.json"
-                out_curve = run_dir / f"{spec.alias}_s{sd}_curve.csv"
-                jobs.append(
-                    RunJob(
-                        order=order,
-                        method_alias=spec.alias,
-                        candidate_id=cand.cid,
-                        seed=int(sd),
-                        steps=int(args.hpo_steps),
-                        eval_every=int(args.eval_every),
-                        out_json=out_json,
-                        out_curve=out_curve,
-                        set_kv=_to_set_args(
-                            method=spec,
-                            candidate=cand,
-                            cli_set=args.set,
-                            seed=int(sd),
-                            steps=int(args.hpo_steps),
-                            eval_every=int(args.eval_every),
-                        ),
-                    )
+            all_candidates: List[Candidate] = []
+            all_results: List[RunResult] = []
+            coordinate_rounds: List[Dict[str, Any]] = []
+            sensitivity_rows: List[Dict[str, Any]] = []
+
+            order = 0
+            for ki, kb in enumerate(spec.knobs):
+                round_trials = int(trial_alloc[ki])
+                coord_candidates = _build_coordinate_candidates(
+                    spec=spec,
+                    base_params=current_params,
+                    knob_idx=ki,
+                    trials_this_round=round_trials,
+                    seed=int(args.hpo_seed_base) + mi * 10007 + ki * 7919,
                 )
-                order += 1
 
-        coarse_results = _run_jobs_parallel(
-            jobs=jobs,
-            config=args.config,
-            gpus=gpus,
-            retries=max(0, int(args.retries)),
-            phase_name=f"{spec.alias}:coarse",
-        )
-        coarse_agg = _agg_candidate_scores(coarse_results, coarse, spec.alias)
-        if not coarse_agg:
-            raise RuntimeError(f"no coarse hpo rows for method={spec.alias}")
-
-        top_n = max(1, int(args.local_topk))
-        top_ids = [str(r["candidate_id"]) for r in coarse_agg[:top_n]]
-        top_cands = [c for c in coarse if c.cid in set(top_ids)]
-
-        seen = {_candidate_fingerprint(c.params) for c in coarse}
-        local = _build_local_candidates(
-            spec=spec,
-            top_candidates=top_cands,
-            already_seen=seen,
-            grid_points=max(1, int(args.local_grid_points)),
-        )
-
-        local_results: List[RunResult] = []
-        local_agg: List[Dict[str, Any]] = []
-        if local:
-            jobs_local: List[RunJob] = []
-            for cand in local:
-                for sd in hpo_seeds:
-                    run_dir = method_dir / "trial_runs" / cand.cid
-                    out_json = run_dir / f"{spec.alias}_s{sd}.json"
-                    out_curve = run_dir / f"{spec.alias}_s{sd}_curve.csv"
-                    jobs_local.append(
-                        RunJob(
-                            order=order,
-                            method_alias=spec.alias,
-                            candidate_id=cand.cid,
-                            seed=int(sd),
-                            steps=int(args.hpo_steps),
-                            eval_every=int(args.eval_every),
-                            out_json=out_json,
-                            out_curve=out_curve,
-                            set_kv=_to_set_args(
-                                method=spec,
-                                candidate=cand,
-                                cli_set=args.set,
+                jobs_round: List[RunJob] = []
+                for cand in coord_candidates:
+                    for sd in hpo_seeds:
+                        run_dir = method_dir / "trial_runs" / cand.cid
+                        out_json = run_dir / f"{spec.alias}_s{sd}.json"
+                        out_curve = run_dir / f"{spec.alias}_s{sd}_curve.csv"
+                        jobs_round.append(
+                            RunJob(
+                                order=order,
+                                method_alias=spec.alias,
+                                candidate_id=cand.cid,
                                 seed=int(sd),
                                 steps=int(args.hpo_steps),
                                 eval_every=int(args.eval_every),
-                            ),
+                                out_json=out_json,
+                                out_curve=out_curve,
+                                set_kv=_to_set_args(
+                                    method=spec,
+                                    candidate=cand,
+                                    cli_set=args.set,
+                                    seed=int(sd),
+                                    steps=int(args.hpo_steps),
+                                    eval_every=int(args.eval_every),
+                                ),
+                            )
                         )
+                        order += 1
+
+                with _file_lock(
+                    locks_root / f"hpo_method_{_safe_token(spec.alias)}__coord_{_safe_token(kb.key)}.lock",
+                    tracker=progress,
+                    label=f"hpo_coord:{spec.alias}:{kb.key}",
+                ):
+                    round_results = _run_jobs_parallel(
+                        jobs=jobs_round,
+                        config=args.config,
+                        gpus=gpus,
+                        retries=max(0, int(args.retries)),
+                        phase_name=f"{spec.alias}:coord:{kb.key}",
+                        base_cfg=base_cfg,
+                        logs_root=logs_root,
+                        progress=progress,
+                        probe_cache=probe_cache,
+                        probe_cache_path=probe_cache_path,
+                        gpu_mem_util_ratio=float(args.gpu_mem_util_ratio),
+                        probe_steps=max(1, int(args.probe_steps)),
+                        probe_timeout_sec=float(args.probe_timeout_sec),
+                        disable_mem_probe=bool(args.disable_mem_probe),
+                        max_workers_per_gpu=max(0, int(args.max_workers_per_gpu)),
                     )
-                    order += 1
+                round_agg = _agg_candidate_scores(round_results, coord_candidates, spec.alias)
+                if not round_agg:
+                    raise RuntimeError(f"no coordinate rows for method={spec.alias} knob={kb.key}")
 
-            local_results = _run_jobs_parallel(
-                jobs=jobs_local,
-                config=args.config,
-                gpus=gpus,
-                retries=max(0, int(args.retries)),
-                phase_name=f"{spec.alias}:local",
+                best_row = round_agg[0]
+                best_cid = str(best_row["candidate_id"])
+                best_cand = next((c for c in coord_candidates if c.cid == best_cid), None)
+                if best_cand is None:
+                    raise RuntimeError(f"coordinate best candidate not found: {best_cid}")
+
+                current_params = {k: float(v) for k, v in best_cand.params.items()}
+                score_means = [float(r["score_mean"]) for r in round_agg]
+                score_var = float(statistics.pvariance(score_means) if len(score_means) > 1 else 0.0)
+
+                coordinate_rounds.append(
+                    {
+                        "round": int(ki + 1),
+                        "knob": kb.key,
+                        "trial_budget": int(round_trials),
+                        "selected_candidate_id": best_cid,
+                        "selected_params": {k: float(v) for k, v in sorted(current_params.items())},
+                        "score_var": score_var,
+                        "candidates": [c.__dict__ for c in coord_candidates],
+                    }
+                )
+                sensitivity_rows.append(
+                    {
+                        "round": int(ki + 1),
+                        "knob": kb.key,
+                        "score_var": score_var,
+                        "score_mean_best": float(best_row["score_mean"]),
+                        "score_std_best": float(best_row["score_std"]),
+                        "selected_candidate_id": best_cid,
+                    }
+                )
+
+                all_candidates.extend(coord_candidates)
+                all_results.extend(round_results)
+
+            sensitivity_rows.sort(key=lambda x: float(x["score_var"]), reverse=True)
+            top_n = min(max(1, int(args.local_topk)), len(spec.knobs))
+            topk_knobs = [str(x["knob"]) for x in sensitivity_rows[:top_n]]
+
+            seen = {_candidate_fingerprint(c.params) for c in all_candidates}
+            local = _build_local_variance_topk_candidates(
+                spec=spec,
+                center_params=current_params,
+                topk_knob_keys=topk_knobs,
+                already_seen=seen,
+                grid_points=max(1, int(args.local_grid_points)),
             )
-            local_agg = _agg_candidate_scores(local_results, local, spec.alias)
 
-        all_candidates = list(coarse) + list(local)
-        all_results = list(coarse_results) + list(local_results)
-        all_agg = _agg_candidate_scores(all_results, all_candidates, spec.alias)
-        if not all_agg:
-            raise RuntimeError(f"no merged hpo rows for method={spec.alias}")
-        best_row = all_agg[0]
-        best_cid = str(best_row["candidate_id"])
-        best_cand = None
-        for c in all_candidates:
-            if c.cid == best_cid:
-                best_cand = c
-                break
-        if best_cand is None:
-            raise RuntimeError(f"best candidate not found: {best_cid}")
+            local_results: List[RunResult] = []
+            if local:
+                jobs_local: List[RunJob] = []
+                for cand in local:
+                    for sd in hpo_seeds:
+                        run_dir = method_dir / "trial_runs" / cand.cid
+                        out_json = run_dir / f"{spec.alias}_s{sd}.json"
+                        out_curve = run_dir / f"{spec.alias}_s{sd}_curve.csv"
+                        jobs_local.append(
+                            RunJob(
+                                order=order,
+                                method_alias=spec.alias,
+                                candidate_id=cand.cid,
+                                seed=int(sd),
+                                steps=int(args.hpo_steps),
+                                eval_every=int(args.eval_every),
+                                out_json=out_json,
+                                out_curve=out_curve,
+                                set_kv=_to_set_args(
+                                    method=spec,
+                                    candidate=cand,
+                                    cli_set=args.set,
+                                    seed=int(sd),
+                                    steps=int(args.hpo_steps),
+                                    eval_every=int(args.eval_every),
+                                ),
+                            )
+                        )
+                        order += 1
 
-        all_best_cfg[spec.alias] = {
-            "method_alias": spec.alias,
-            "method_name": spec.method_name,
-            "candidate_id": best_cid,
-            "score_mean": float(best_row["score_mean"]),
-            "score_std": float(best_row["score_std"]),
-            "params": {k: float(v) for k, v in sorted(best_cand.params.items())},
-            "fixed_overrides": dict(spec.fixed_overrides),
-            "top_candidates_from_coarse": top_ids,
-        }
+                with _file_lock(
+                    locks_root / f"hpo_method_{_safe_token(spec.alias)}__local_var_topk.lock",
+                    tracker=progress,
+                    label=f"hpo_local_topk:{spec.alias}",
+                ):
+                    local_results = _run_jobs_parallel(
+                        jobs=jobs_local,
+                        config=args.config,
+                        gpus=gpus,
+                        retries=max(0, int(args.retries)),
+                        phase_name=f"{spec.alias}:local_var_topk",
+                        base_cfg=base_cfg,
+                        logs_root=logs_root,
+                        progress=progress,
+                        probe_cache=probe_cache,
+                        probe_cache_path=probe_cache_path,
+                        gpu_mem_util_ratio=float(args.gpu_mem_util_ratio),
+                        probe_steps=max(1, int(args.probe_steps)),
+                        probe_timeout_sec=float(args.probe_timeout_sec),
+                        disable_mem_probe=bool(args.disable_mem_probe),
+                        max_workers_per_gpu=max(0, int(args.max_workers_per_gpu)),
+                    )
 
-        (method_dir / "best_config.json").write_text(
-            json.dumps(all_best_cfg[spec.alias], indent=2, sort_keys=True),
-            encoding="utf-8",
-        )
+            all_candidates = list(all_candidates) + list(local)
+            all_results = list(all_results) + list(local_results)
+            all_agg = _agg_candidate_scores(all_results, all_candidates, spec.alias)
+            if not all_agg:
+                raise RuntimeError(f"no merged hpo rows for method={spec.alias}")
 
-        rows_per_run: List[Dict[str, Any]] = []
-        for rr in all_results:
-            rows_per_run.append(
-                {
-                    "method": rr.method_alias,
-                    "candidate_id": rr.candidate_id,
-                    "seed": rr.seed,
-                    "best_val_acc": rr.best_val_acc,
-                    "final_val_acc": rr.final_val_acc,
-                    "score_05_05": rr.score_05_05,
-                    "reused": rr.reused,
-                    "summary_json": rr.out_json,
-                    "curve_csv": rr.out_curve,
-                }
+            best_row = all_agg[0]
+            best_cid = str(best_row["candidate_id"])
+            best_cand = next((c for c in all_candidates if c.cid == best_cid), None)
+            if best_cand is None:
+                raise RuntimeError(f"best candidate not found: {best_cid}")
+
+            all_best_cfg[spec.alias] = {
+                "method_alias": spec.alias,
+                "method_name": spec.method_name,
+                "candidate_id": best_cid,
+                "score_mean": float(best_row["score_mean"]),
+                "score_std": float(best_row["score_std"]),
+                "params": {k: float(v) for k, v in sorted(best_cand.params.items())},
+                "fixed_overrides": dict(spec.fixed_overrides),
+                "search_strategy": "coordinate_fix_others_then_variance_topk_local_grid",
+                "coordinate_trials_by_knob": [int(x) for x in trial_alloc],
+                "topk_var_knobs": list(topk_knobs),
+                "top_candidates_from_coarse": [],
+            }
+
+            (method_dir / "best_config.json").write_text(
+                json.dumps(all_best_cfg[spec.alias], indent=2, sort_keys=True),
+                encoding="utf-8",
             )
-        _write_csv(method_dir / "hpo_per_run.csv", rows_per_run)
-        _write_csv(method_dir / "hpo_agg.csv", all_agg)
-        (method_dir / "candidate_manifest.json").write_text(
-            json.dumps(
-                {
-                    "coarse_candidates": [c.__dict__ for c in coarse],
-                    "local_candidates": [c.__dict__ for c in local],
-                },
-                indent=2,
-                sort_keys=True,
-            ),
-            encoding="utf-8",
-        )
-        global_hpo_rows.extend(all_agg)
+
+            rows_per_run: List[Dict[str, Any]] = []
+            for rr in all_results:
+                rows_per_run.append(
+                    {
+                        "method": rr.method_alias,
+                        "candidate_id": rr.candidate_id,
+                        "seed": rr.seed,
+                        "best_val_acc": rr.best_val_acc,
+                        "final_val_acc": rr.final_val_acc,
+                        "score_05_05": rr.score_05_05,
+                        "reused": rr.reused,
+                        "summary_json": rr.out_json,
+                        "curve_csv": rr.out_curve,
+                    }
+                )
+            _write_csv(method_dir / "hpo_per_run.csv", rows_per_run)
+            _write_csv(method_dir / "hpo_agg.csv", all_agg)
+            (method_dir / "candidate_manifest.json").write_text(
+                json.dumps(
+                    {
+                        "coordinate_rounds": coordinate_rounds,
+                        "sensitivity": sensitivity_rows,
+                        "selected_knobs_for_local": topk_knobs,
+                        "local_candidates": [c.__dict__ for c in local],
+                    },
+                    indent=2,
+                    sort_keys=True,
+                ),
+                encoding="utf-8",
+            )
+            global_hpo_rows.extend(all_agg)
+
+        progress.note("method_done", {"method": spec.alias, "phase": "hpo"})
 
     _write_csv(hpo_root / "hpo_agg_all_methods.csv", global_hpo_rows)
     (hpo_root / "best_configs.json").write_text(json.dumps(all_best_cfg, indent=2, sort_keys=True), encoding="utf-8")
     _run_hpo_exports(hpo_root)
 
-    final_jobs: List[RunJob] = []
-    order = 0
+    final_results: List[RunResult] = []
     for spec in specs:
+        progress.note("method_start", {"method": spec.alias, "phase": "final"})
         best = all_best_cfg[spec.alias]
         best_cand = Candidate(
             cid=str(best["candidate_id"]),
             stage="best",
             params={str(k): float(v) for k, v in dict(best["params"]).items()},
         )
+
+        method_final_jobs: List[RunJob] = []
+        order = 0
         for sd in final_seeds:
             out_json = final_root / f"{spec.alias}_s{sd}.json"
             out_curve = final_root / f"{spec.alias}_s{sd}_curve.csv"
-            final_jobs.append(
+            method_final_jobs.append(
                 RunJob(
                     order=order,
                     method_alias=spec.alias,
@@ -845,13 +1799,30 @@ def main() -> None:
             )
             order += 1
 
-    final_results = _run_jobs_parallel(
-        jobs=final_jobs,
-        config=args.config,
-        gpus=gpus,
-        retries=max(0, int(args.retries)),
-        phase_name="final",
-    )
+        with _file_lock(
+            locks_root / f"final_method_{_safe_token(spec.alias)}.lock",
+            tracker=progress,
+            label=f"final_method:{spec.alias}",
+        ):
+            method_results = _run_jobs_parallel(
+                jobs=method_final_jobs,
+                config=args.config,
+                gpus=gpus,
+                retries=max(0, int(args.retries)),
+                phase_name=f"final:{spec.alias}",
+                base_cfg=base_cfg,
+                logs_root=logs_root,
+                progress=progress,
+                probe_cache=probe_cache,
+                probe_cache_path=probe_cache_path,
+                gpu_mem_util_ratio=float(args.gpu_mem_util_ratio),
+                probe_steps=max(1, int(args.probe_steps)),
+                probe_timeout_sec=float(args.probe_timeout_sec),
+                disable_mem_probe=bool(args.disable_mem_probe),
+                max_workers_per_gpu=max(0, int(args.max_workers_per_gpu)),
+            )
+        final_results.extend(method_results)
+        progress.note("method_done", {"method": spec.alias, "phase": "final"})
 
     final_per_run: List[Dict[str, Any]] = []
     for rr in final_results:
@@ -903,9 +1874,25 @@ def main() -> None:
         skip_mvp=bool(args.skip_mvp),
     )
 
+    progress.note(
+        "pipeline_done",
+        {
+            "out_dir": str(out_dir),
+            "hpo_best": str(hpo_root / "best_configs.json"),
+            "final_agg": str(final_root / "final_agg.csv"),
+            "progress_file": str(status_root / "progress.json"),
+            "gpu_logs_root": str(logs_root),
+            "failure_log": str(status_root / "worker_failures.jsonl"),
+            "probe_cache": str(probe_cache_path),
+        },
+    )
+
     print(f"\n[pipeline done] out_dir={out_dir}")
     print(f"[hpo best] {(hpo_root / 'best_configs.json')}")
     print(f"[final agg] {(final_root / 'final_agg.csv')}")
+    print(f"[progress] {(status_root / 'progress.json')}")
+    print(f"[gpu logs] {logs_root}")
+    print(f"[worker failures] {(status_root / 'worker_failures.jsonl')}")
 
 
 if __name__ == "__main__":
