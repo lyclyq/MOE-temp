@@ -1,0 +1,9 @@
+[run] method=baseline candidate=coord_03_anchor seed=1 steps=1 gpu=1
+[run] cmd=
+/home/yuli0398/miniconda3/envs/optimization/bin/python /share/home/yuli0398/Optimization/MOE-grad-conflict-routing/scripts/run.py --config configs/multitask_glue3_rte_mrpc_cola_real.yaml --set model.backbone_backend=hf --set model.hf_load_pretrained=true --set model.backbone=gpt2 --set model.hf_pretrained_name=gpt2-medium --set model.expert_type=lora --set model.num_experts=4 --set model.top_k=2 --set seed=1 --set method.name=baseline_avg --set train.steps=1 --set train.eval_every_steps=1 --set train.grad_clip=1 --set train.lr=2e-05 --set train.weight_decay=0.01 --out /share/home/yuli0398/Optimization/MOE-grad-conflict-routing/runs/paper_suite_smoke_min/multi_gpu/multi_task/glue3_gpt2_lora_e4_k2/final/baseline_s1.json --curve_out /share/home/yuli0398/Optimization/MOE-grad-conflict-routing/runs/paper_suite_smoke_min/multi_gpu/multi_task/glue3_gpt2_lora_e4_k2/final/baseline_s1_curve.csv
+/home/yuli0398/miniconda3/envs/optimization/lib/python3.10/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+[step 0001/1] method=baseline_avg loss=4.6623 train_acc=0.3918 train_loss=2.5291 val_acc=0.4097 val_loss=2.4820 router_H=0.1439 best=0.4097
+           router_load=[0.016874372959136963, 0.935467541217804, 0.020463598892092705, 0.027194486930966377]
+saved summary -> /share/home/yuli0398/Optimization/MOE-grad-conflict-routing/runs/paper_suite_smoke_min/multi_gpu/multi_task/glue3_gpt2_lora_e4_k2/final/baseline_s1.json
+saved curve -> /share/home/yuli0398/Optimization/MOE-grad-conflict-routing/runs/paper_suite_smoke_min/multi_gpu/multi_task/glue3_gpt2_lora_e4_k2/final/baseline_s1_curve.csv

@@ -1,0 +1,37 @@
+{
+  "config": "configs/multitask_glue3_rte_mrpc_cola_real.yaml",
+  "disable_mem_probe": false,
+  "eval_every": 1,
+  "extra_set": [
+    "model.backbone_backend=hf",
+    "model.hf_load_pretrained=true",
+    "model.backbone=deberta",
+    "model.hf_pretrained_name=microsoft/deberta-v3-base",
+    "model.expert_type=ffn",
+    "model.num_experts=4",
+    "model.top_k=2"
+  ],
+  "final_seeds": [
+    1
+  ],
+  "final_steps": 1,
+  "gpu_mem_util_ratio": 0.85,
+  "hpo_seed_base": 20260311,
+  "hpo_seeds": [
+    1
+  ],
+  "hpo_steps": 1,
+  "hpo_strategy": "coordinate_then_variance_topk_local_grid",
+  "hpo_trials": 1,
+  "local_grid_points": 1,
+  "local_topk": 1,
+  "max_workers_per_gpu": 0,
+  "methods": [
+    "baseline",
+    "cagrad",
+    "ours"
+  ],
+  "probe_steps": 2,
+  "probe_timeout_sec": 600.0,
+  "retries": 2
+}

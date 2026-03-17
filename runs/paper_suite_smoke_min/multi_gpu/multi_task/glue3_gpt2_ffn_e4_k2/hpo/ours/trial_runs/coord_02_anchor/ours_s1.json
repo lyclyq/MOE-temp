@@ -1,0 +1,311 @@
+{
+  "batch_semantics": {
+    "batch_hpo_semantics": "train.batch_size is the per-task effective batch size; total samples per update equals num_tasks * train.batch_size.",
+    "configured_effective_batch_per_task": 8,
+    "configured_effective_update_samples": 24,
+    "device_transfer_semantics": "GPU staging chunks are only outer transport groups of whole logical micro-batches; they do not redefine vote partitioning or the effective update batch.",
+    "gpu_streaming_chunk_size": 8,
+    "logical_micro_batch_size": 4,
+    "num_tasks_per_update": 3
+  },
+  "best_val_acc": 0.6067011092793508,
+  "cli_overrides": [
+    "model.backbone_backend=hf",
+    "model.hf_load_pretrained=true",
+    "model.backbone=gpt2",
+    "model.hf_pretrained_name=gpt2-medium",
+    "model.expert_type=ffn",
+    "model.num_experts=4",
+    "model.top_k=2",
+    "seed=1",
+    "method.name=ours",
+    "train.steps=1",
+    "train.eval_every_steps=1",
+    "method.ours.use_load_norm=true",
+    "method.ours.eps=1e-08",
+    "method.ours.lambda_align=0.001",
+    "train.lr=2e-05"
+  ],
+  "config_path": "configs/multitask_glue3_rte_mrpc_cola_real.yaml",
+  "config_path_resolved": "/share/home/yuli0398/Optimization/MOE-grad-conflict-routing/configs/multitask_glue3_rte_mrpc_cola_real.yaml",
+  "data_reproducibility": {
+    "data_source": "glue",
+    "global_seed": 1,
+    "loader_seed_base": 1026,
+    "task_order": [
+      "glue/rte",
+      "glue/mrpc",
+      "glue/cola"
+    ],
+    "tasks": {
+      "glue/cola": {
+        "num_labels": 2,
+        "task": "glue/cola",
+        "tokenizer_name": "gpt2-medium",
+        "train_loader_shuffle_seed": 7299207,
+        "train_size": 8551,
+        "val_loader_shuffle_seed": 7299208,
+        "val_size": 1043
+      },
+      "glue/mrpc": {
+        "num_labels": 2,
+        "task": "glue/mrpc",
+        "tokenizer_name": "gpt2-medium",
+        "train_loader_shuffle_seed": 7454836,
+        "train_size": 3668,
+        "val_loader_shuffle_seed": 7454837,
+        "val_size": 408
+      },
+      "glue/rte": {
+        "num_labels": 2,
+        "task": "glue/rte",
+        "tokenizer_name": "gpt2-medium",
+        "train_loader_shuffle_seed": 6611163,
+        "train_size": 2490,
+        "val_loader_shuffle_seed": 6611164,
+        "val_size": 277
+      }
+    }
+  },
+  "final_diagnostics": {
+    "avg_intra_expert_coherence": 0.3257787837131082,
+    "expert_diversity": [
+      0.39328397839022167,
+      0.42501826748502686,
+      0.468924550241172,
+      0.8830208202670449
+    ],
+    "expert_names": [
+      "e0",
+      "e1",
+      "e2",
+      "e3"
+    ],
+    "expert_purity": [
+      0.8513740301132202,
+      0.8242928385734558,
+      0.7903474569320679,
+      0.4591922163963318
+    ],
+    "inter_expert_similarity": 0.22569534480471765,
+    "inter_expert_similarity_matrix": [
+      [
+        1.0,
+        0.21612321905069415,
+        0.2190730426053224,
+        0.22293112935497786
+      ],
+      [
+        0.21612321905069415,
+        1.0,
+        0.2116957480542983,
+        0.25032241155819257
+      ],
+      [
+        0.2190730426053224,
+        0.2116957480542983,
+        1.0,
+        0.23402651820482073
+      ],
+      [
+        0.22293112935497786,
+        0.25032241155819257,
+        0.23402651820482073,
+        1.0
+      ]
+    ],
+    "intra_expert_coherence": [
+      0.9443787717642372,
+      -0.299048748862667,
+      -0.30759171435606353,
+      0.9653768263069261
+    ],
+    "overall_task_conflict_cos": 0.9582666144758338,
+    "task_conflict_matrix": [
+      [
+        1.0,
+        0.9527227135018653,
+        0.9923981996274438
+      ],
+      [
+        0.9527227135018653,
+        1.0,
+        0.9296789302981923
+      ],
+      [
+        0.9923981996274438,
+        0.9296789302981923,
+        1.0
+      ]
+    ],
+    "task_grad_norm_cv": 0.4619760738968758,
+    "task_grad_norms": [
+      126.007080078125,
+      31.985485076904297,
+      116.72183227539062
+    ],
+    "task_names": [
+      "glue/rte",
+      "glue/mrpc",
+      "glue/cola"
+    ]
+  },
+  "final_step_metrics": {
+    "alignment_reward": 1893.6876220703125,
+    "avg_intra_expert_coherence": 0.3257787837131082,
+    "expert_diversity_e0": 0.39328397839022167,
+    "expert_diversity_e1": 0.42501826748502686,
+    "expert_diversity_e2": 0.468924550241172,
+    "expert_diversity_e3": 0.8830208202670449,
+    "expert_diversity_mean": 0.5425619040958664,
+    "expert_purity_e0": 0.8513740301132202,
+    "expert_purity_e1": 0.8242928385734558,
+    "expert_purity_e2": 0.7903474569320679,
+    "expert_purity_e3": 0.4591922163963318,
+    "expert_purity_mean": 0.7313016355037689,
+    "inter_expert_similarity": 0.22569534480471765,
+    "inter_expert_similarity_e0_e0": 1.0,
+    "inter_expert_similarity_e0_e1": 0.21612321905069415,
+    "inter_expert_similarity_e0_e2": 0.2190730426053224,
+    "inter_expert_similarity_e0_e3": 0.22293112935497786,
+    "inter_expert_similarity_e1_e0": 0.21612321905069415,
+    "inter_expert_similarity_e1_e1": 1.0,
+    "inter_expert_similarity_e1_e2": 0.2116957480542983,
+    "inter_expert_similarity_e1_e3": 0.25032241155819257,
+    "inter_expert_similarity_e2_e0": 0.2190730426053224,
+    "inter_expert_similarity_e2_e1": 0.2116957480542983,
+    "inter_expert_similarity_e2_e2": 1.0,
+    "inter_expert_similarity_e2_e3": 0.23402651820482073,
+    "inter_expert_similarity_e3_e0": 0.22293112935497786,
+    "inter_expert_similarity_e3_e1": 0.25032241155819257,
+    "inter_expert_similarity_e3_e2": 0.23402651820482073,
+    "inter_expert_similarity_e3_e3": 1.0,
+    "intra_expert_coherence_e0": 0.9443787717642372,
+    "intra_expert_coherence_e1": -0.299048748862667,
+    "intra_expert_coherence_e2": -0.30759171435606353,
+    "intra_expert_coherence_e3": 0.9653768263069261,
+    "l_conflict": -1893.6876220703125,
+    "l_conflict_e0": -5.782181262969971,
+    "l_conflict_e1": -8.820354461669922,
+    "l_conflict_e2": -18.910179138183594,
+    "l_conflict_e3": -1860.1749267578125,
+    "load_cv": 1.695447388024695,
+    "load_max_min_ratio": 612.3698564039092,
+    "overall_task_conflict_cos": 0.9582666144758338,
+    "router_conflict_grad_l2": 0.0,
+    "router_entropy": 0.02021594836822384,
+    "router_load_e0": 0.0016070859273895621,
+    "router_load_e1": 0.004082325380295515,
+    "router_load_e2": 0.010180240496993065,
+    "router_load_e3": 0.9841309785842896,
+    "step": 1.0,
+    "task_acc__glue_cola": 0.6903163950143816,
+    "task_acc__glue_mrpc": 0.6568627450980392,
+    "task_acc__glue_rte": 0.4729241877256318,
+    "task_conflict_t0_t0": 1.0,
+    "task_conflict_t0_t1": 0.9527227135018653,
+    "task_conflict_t0_t2": 0.9923981996274438,
+    "task_conflict_t1_t0": 0.9527227135018653,
+    "task_conflict_t1_t1": 1.0,
+    "task_conflict_t1_t2": 0.9296789302981923,
+    "task_conflict_t2_t0": 0.9923981996274438,
+    "task_conflict_t2_t1": 0.9296789302981923,
+    "task_conflict_t2_t2": 1.0,
+    "task_grad_norm_cv": 0.4619760738968758,
+    "task_loss__glue_cola": 0.7870067364841927,
+    "task_loss__glue_mrpc": 0.6590816729209003,
+    "task_loss__glue_rte": 1.037608106136322,
+    "train_acc": 0.6223776975163516,
+    "train_loss": 0.8015167396454963,
+    "train_step_loss": 0.751986600458622,
+    "utilization_ratio": 0.25,
+    "val_acc": 0.6067011092793508,
+    "val_loss": 0.827898838513805
+  },
+  "final_val_acc": 0.6067011092793508,
+  "method": "ours",
+  "num_eval_points": 1,
+  "overhead": {
+    "mean_train_step_time_sec": 0.849403003230691,
+    "peak_cuda_memory_mb": 7048.77001953125,
+    "wall_time_sec": 114.15866767521948
+  },
+  "reproducibility": {
+    "command": "/share/home/yuli0398/Optimization/MOE-grad-conflict-routing/scripts/run.py --config configs/multitask_glue3_rte_mrpc_cola_real.yaml --set model.backbone_backend=hf --set model.hf_load_pretrained=true --set model.backbone=gpt2 --set model.hf_pretrained_name=gpt2-medium --set model.expert_type=ffn --set model.num_experts=4 --set model.top_k=2 --set seed=1 --set method.name=ours --set train.steps=1 --set train.eval_every_steps=1 --set method.ours.use_load_norm=true --set method.ours.eps=1e-08 --set method.ours.lambda_align=0.001 --set train.lr=2e-05 --out /share/home/yuli0398/Optimization/MOE-grad-conflict-routing/runs/paper_suite_smoke_min/multi_gpu/multi_task/glue3_gpt2_ffn_e4_k2/hpo/ours/trial_runs/coord_02_anchor/ours_s1.json --curve_out /share/home/yuli0398/Optimization/MOE-grad-conflict-routing/runs/paper_suite_smoke_min/multi_gpu/multi_task/glue3_gpt2_ffn_e4_k2/hpo/ours/trial_runs/coord_02_anchor/ours_s1_curve.csv",
+    "curve_path": "/share/home/yuli0398/Optimization/MOE-grad-conflict-routing/runs/paper_suite_smoke_min/multi_gpu/multi_task/glue3_gpt2_ffn_e4_k2/hpo/ours/trial_runs/coord_02_anchor/ours_s1_curve.csv",
+    "cwd": "/share/home/yuli0398/Optimization/MOE-grad-conflict-routing",
+    "runtime": {
+      "cuda_available": true,
+      "cuda_device_count": 1,
+      "cuda_device_names": [
+        "NVIDIA GeForce RTX 3090"
+      ],
+      "platform": "Linux-5.15.0-139-generic-x86_64-with-glibc2.31",
+      "python_version": "3.10.18",
+      "torch_version": "2.5.1+cu121"
+    },
+    "summary_path": "/share/home/yuli0398/Optimization/MOE-grad-conflict-routing/runs/paper_suite_smoke_min/multi_gpu/multi_task/glue3_gpt2_ffn_e4_k2/hpo/ours/trial_runs/coord_02_anchor/ours_s1.json"
+  },
+  "resolved_config": {
+    "data": {
+      "datasets": [
+        "glue/rte",
+        "glue/mrpc",
+        "glue/cola"
+      ],
+      "source": "glue",
+      "train_size": 0,
+      "val_size": 0
+    },
+    "method": {
+      "baseline_cagrad": {
+        "c": 0.4,
+        "eps": 1e-08,
+        "inner_lr": 0.1,
+        "inner_steps": 10
+      },
+      "name": "ours",
+      "ours": {
+        "eps": 1e-08,
+        "lambda_align": 0.001,
+        "micro_batch_size": 8,
+        "use_load_norm": true
+      }
+    },
+    "model": {
+      "backbone": "gpt2",
+      "backbone_backend": "hf",
+      "dropout": 0.1,
+      "expert_type": "ffn",
+      "ffn_hidden_dim": 3072,
+      "hf_load_pretrained": true,
+      "hf_local_files_only": false,
+      "hf_pretrained_name": "gpt2-medium",
+      "hidden_dim": 768,
+      "lora_alpha": 16.0,
+      "lora_rank": 16,
+      "max_seq_len": 128,
+      "num_classes": 2,
+      "num_experts": 4,
+      "routing_mode": "softmax",
+      "seq_len": 128,
+      "top_k": 2,
+      "vocab_size": 30522
+    },
+    "seed": 1,
+    "train": {
+      "batch_size": 8,
+      "device_batch_size": 0,
+      "eval_every_steps": 1,
+      "eval_max_batches": 0,
+      "grad_clip": 1.0,
+      "log_every": 10,
+      "lr": 2e-05,
+      "micro_batch_size": 4,
+      "steps": 1,
+      "weight_decay": 0.01
+    }
+  },
+  "resolved_config_sha256": "f2bca8fb63269aea07ee7b2a8f6492f5578d3e4659a71b944364a8195097632c",
+  "seed": 1
+}

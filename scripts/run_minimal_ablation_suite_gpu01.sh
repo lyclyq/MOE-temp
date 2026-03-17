@@ -16,6 +16,9 @@ LOCAL_TOPK="${LOCAL_TOPK:-3}"
 LOCAL_GRID_POINTS="${LOCAL_GRID_POINTS:-3}"
 METHODS="${METHODS:-ablation}"
 BACKBONE="${BACKBONE:-deberta}"
+EXPERT_TYPES="${EXPERT_TYPES:-lora,ffn}"
+NUM_EXPERTS="${NUM_EXPERTS:-4}"
+TOP_K="${TOP_K:-2}"
 SUITE_ROOT="${SUITE_ROOT:-runs/paper_suite}"
 
 case "$BACKBONE" in
@@ -38,53 +41,68 @@ declare -a SETTINGS=(
   "multi_glue3:configs/multitask_glue3_rte_mrpc_cola_real.yaml"
 )
 
-for item in "${SETTINGS[@]}"; do
-  name="${item%%:*}"
-  cfg="${item#*:}"
-  case "$name" in
-    single_mrpc)
-      REUSE_OUT="${SUITE_ROOT}/single_task/${BACKBONE}_mrpc"
-      HPO_STEPS_CUR="$HPO_STEPS_SINGLE"
-      ;;
-    multi_glue3)
-      REUSE_OUT="${SUITE_ROOT}/multi_task/glue3_${BACKBONE}"
-      HPO_STEPS_CUR="$HPO_STEPS_MULTI"
-      ;;
+for expert in "${EXPERT_ARR[@]}"; do
+  ex="$(echo "$expert" | xargs)"
+  case "$ex" in
+    lora|ffn) ;;
     *)
-      echo "unsupported ablation reuse source for setting=$name" >&2
+      echo "unsupported expert_type: $ex (supported: lora,ffn)" >&2
       exit 1
       ;;
   esac
 
-  compute_out="${SUITE_ROOT}/minimal_ablation_compute/${name}_${BACKBONE}"
-  out="${SUITE_ROOT}/minimal_ablation/${name}_${BACKBONE}"
-  echo "[ablation] setting=$name backbone=$BACKBONE compute=$compute_out out=$out reuse=$REUSE_OUT"
+  for item in "${SETTINGS[@]}"; do
+    name="${item%%:*}"
+    cfg="${item#*:}"
+    case "$name" in
+      single_mrpc)
+        REUSE_OUT="${SUITE_ROOT}/single_task/${BACKBONE}_mrpc_${ex}_e${NUM_EXPERTS}_k${TOP_K}"
+        HPO_STEPS_CUR="$HPO_STEPS_SINGLE"
+        ;;
+      multi_glue3)
+        REUSE_OUT="${SUITE_ROOT}/multi_task/glue3_${BACKBONE}_${ex}_e${NUM_EXPERTS}_k${TOP_K}"
+        HPO_STEPS_CUR="$HPO_STEPS_MULTI"
+        ;;
+      *)
+        echo "unsupported ablation reuse source for setting=$name" >&2
+        exit 1
+        ;;
+    esac
 
-  python scripts/pipeline_hpo_final_plot.py \
-    --config "$cfg" \
-    --out_dir "$compute_out" \
-    --methods "$METHODS" \
-    --gpus "$GPUS" \
-    --hpo_seeds "$HPO_SEEDS" \
-    --final_seeds "$FINAL_SEEDS" \
-    --hpo_trials "$HPO_TRIALS" \
-    --hpo_steps "$HPO_STEPS_CUR" \
-    --final_steps "$FINAL_STEPS" \
-    --eval_every "$EVAL_EVERY" \
-    --local_topk "$LOCAL_TOPK" \
-    --local_grid_points "$LOCAL_GRID_POINTS" \
-    --set "model.backbone_backend=hf" \
-    --set "model.hf_load_pretrained=true" \
-    --set "model.backbone=$BACKBONE" \
-    --set "model.hf_pretrained_name=$HF_NAME" \
-    "${EXTRA_ARGS[@]}"
+    compute_out="${SUITE_ROOT}/minimal_ablation_compute/${name}_${BACKBONE}_${ex}_e${NUM_EXPERTS}_k${TOP_K}"
+    out="${SUITE_ROOT}/minimal_ablation/${name}_${BACKBONE}_${ex}_e${NUM_EXPERTS}_k${TOP_K}"
+    echo "[ablation] setting=$name backbone=$BACKBONE expert=$ex e=$NUM_EXPERTS k=$TOP_K compute=$compute_out out=$out reuse=$REUSE_OUT"
 
-  python scripts/assemble_minimal_ablation_results.py \
-    --compute_dir "$compute_out" \
-    --reuse_dir "$REUSE_OUT" \
-    --out_dir "$out" \
-    --final_seeds "$FINAL_SEEDS" \
-    "${EXTRA_ARGS[@]}"
+    python scripts/pipeline_hpo_final_plot.py \
+      --config "$cfg" \
+      --out_dir "$compute_out" \
+      --methods "$METHODS" \
+      --gpus "$GPUS" \
+      --hpo_seeds "$HPO_SEEDS" \
+      --final_seeds "$FINAL_SEEDS" \
+      --hpo_trials "$HPO_TRIALS" \
+      --hpo_steps "$HPO_STEPS_CUR" \
+      --final_steps "$FINAL_STEPS" \
+      --eval_every "$EVAL_EVERY" \
+      --local_topk "$LOCAL_TOPK" \
+      --local_grid_points "$LOCAL_GRID_POINTS" \
+      --set "model.backbone_backend=hf" \
+      --set "model.hf_load_pretrained=true" \
+      --set "model.backbone=$BACKBONE" \
+      --set "model.hf_pretrained_name=$HF_NAME" \
+      --set "model.expert_type=$ex" \
+      --set "model.num_experts=$NUM_EXPERTS" \
+      --set "model.top_k=$TOP_K" \
+      "${EXTRA_ARGS[@]}"
+
+    python scripts/assemble_minimal_ablation_results.py \
+      --compute_dir "$compute_out" \
+      --reuse_dir "$REUSE_OUT" \
+      --out_dir "$out" \
+      --final_seeds "$FINAL_SEEDS" \
+      "${EXTRA_ARGS[@]}"
+  done
 done
 
 echo "done: ${SUITE_ROOT}/minimal_ablation"
+IFS=',' read -r -a EXPERT_ARR <<< "$EXPERT_TYPES"

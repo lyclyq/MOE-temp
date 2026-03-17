@@ -16,10 +16,14 @@ LOCAL_GRID_POINTS="${LOCAL_GRID_POINTS:-3}"
 METHODS="${METHODS:-baseline,cagrad,ours}"
 BACKBONES="${BACKBONES:-roberta,deberta}"
 TASKS="${TASKS:-rte,mrpc,sst2}"
+EXPERT_TYPES="${EXPERT_TYPES:-lora,ffn}"
+NUM_EXPERTS="${NUM_EXPERTS:-4}"
+TOP_K="${TOP_K:-2}"
 SUITE_ROOT="${SUITE_ROOT:-runs/paper_suite}"
 
 IFS=',' read -r -a BACKBONE_ARR <<< "$BACKBONES"
 IFS=',' read -r -a TASK_ARR <<< "$TASKS"
+IFS=',' read -r -a EXPERT_ARR <<< "$EXPERT_TYPES"
 
 EXTRA_ARGS=()
 if [[ "${SKIP_MVP:-0}" == "1" ]]; then
@@ -50,26 +54,39 @@ for backbone in "${BACKBONE_ARR[@]}"; do
         ;;
     esac
 
-    OUT="${SUITE_ROOT}/single_task/${bb}_${t}"
-    echo "[single] backbone=$bb task=$t out=$OUT"
-    python scripts/pipeline_hpo_final_plot.py \
-      --config "$CFG" \
-      --out_dir "$OUT" \
-      --methods "$METHODS" \
-      --gpus "$GPUS" \
-      --hpo_seeds "$HPO_SEEDS" \
-      --final_seeds "$FINAL_SEEDS" \
-      --hpo_trials "$HPO_TRIALS" \
-      --hpo_steps "$HPO_STEPS" \
-      --final_steps "$FINAL_STEPS" \
-      --eval_every "$EVAL_EVERY" \
-      --local_topk "$LOCAL_TOPK" \
-      --local_grid_points "$LOCAL_GRID_POINTS" \
-      --set "model.backbone_backend=hf" \
-      --set "model.hf_load_pretrained=true" \
-      --set "model.backbone=$bb" \
-      --set "model.hf_pretrained_name=$HF_NAME" \
-      "${EXTRA_ARGS[@]}"
+    for expert in "${EXPERT_ARR[@]}"; do
+      ex="$(echo "$expert" | xargs)"
+      case "$ex" in
+        lora|ffn) ;;
+        *)
+          echo "unsupported expert_type: $ex (supported: lora,ffn)" >&2
+          exit 1
+          ;;
+      esac
+      OUT="${SUITE_ROOT}/single_task/${bb}_${t}_${ex}_e${NUM_EXPERTS}_k${TOP_K}"
+      echo "[single] backbone=$bb task=$t expert=$ex e=$NUM_EXPERTS k=$TOP_K out=$OUT"
+      python scripts/pipeline_hpo_final_plot.py \
+        --config "$CFG" \
+        --out_dir "$OUT" \
+        --methods "$METHODS" \
+        --gpus "$GPUS" \
+        --hpo_seeds "$HPO_SEEDS" \
+        --final_seeds "$FINAL_SEEDS" \
+        --hpo_trials "$HPO_TRIALS" \
+        --hpo_steps "$HPO_STEPS" \
+        --final_steps "$FINAL_STEPS" \
+        --eval_every "$EVAL_EVERY" \
+        --local_topk "$LOCAL_TOPK" \
+        --local_grid_points "$LOCAL_GRID_POINTS" \
+        --set "model.backbone_backend=hf" \
+        --set "model.hf_load_pretrained=true" \
+        --set "model.backbone=$bb" \
+        --set "model.hf_pretrained_name=$HF_NAME" \
+        --set "model.expert_type=$ex" \
+        --set "model.num_experts=$NUM_EXPERTS" \
+        --set "model.top_k=$TOP_K" \
+        "${EXTRA_ARGS[@]}"
+    done
   done
 done
 

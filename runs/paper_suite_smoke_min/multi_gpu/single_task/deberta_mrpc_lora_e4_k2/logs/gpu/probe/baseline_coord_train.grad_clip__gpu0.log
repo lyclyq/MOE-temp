@@ -1,0 +1,12 @@
+[probe] phase=baseline:coord:train.grad_clip gpu=0
+[probe] cmd=
+/home/yuli0398/miniconda3/envs/optimization/bin/python /share/home/yuli0398/Optimization/MOE-grad-conflict-routing/scripts/run.py --config configs/singletask_mrpc_real.yaml --set model.backbone_backend=hf --set model.hf_load_pretrained=true --set model.backbone=deberta --set model.hf_pretrained_name=microsoft/deberta-v3-base --set model.expert_type=lora --set model.num_experts=4 --set model.top_k=2 --set seed=1 --set method.name=baseline_avg --set train.steps=2 --set train.eval_every_steps=0 --set train.grad_clip=1 --set train.lr=2e-05 --set train.weight_decay=0.01 --out /tmp/moe_probe_s4n1ucch/probe_summary.json --curve_out /tmp/moe_probe_s4n1ucch/probe_curve.csv
+/home/yuli0398/miniconda3/envs/optimization/lib/python3.10/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+/home/yuli0398/miniconda3/envs/optimization/lib/python3.10/site-packages/transformers/convert_slow_tokenizer.py:561: UserWarning: The sentencepiece tokenizer that you are converting to a fast tokenizer uses the byte fallback option which is not implemented in the fast tokenizers. In practice this means that the fast version of the tokenizer can produce unknown tokens whereas the sentencepiece version would have converted these unknown tokens into a sequence of byte tokens matching the original piece of text.
+  warnings.warn(
+[step 0001/2] method=baseline_avg loss=0.6336 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0002/2] method=baseline_avg loss=0.5785 train_acc=0.6794 train_loss=0.6160 val_acc=0.6887 val_loss=0.6045 router_H=1.2940 best=0.6887
+           router_load=[0.29919564723968506, 0.2385207712650299, 0.10202227532863617, 0.36026132106781006]
+saved summary -> /tmp/moe_probe_s4n1ucch/probe_summary.json
+saved curve -> /tmp/moe_probe_s4n1ucch/probe_curve.csv

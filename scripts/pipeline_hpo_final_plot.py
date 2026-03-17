@@ -708,16 +708,20 @@ def _default_params(
 def _split_coordinate_trials(total_trials: int, knob_count: int) -> List[int]:
     if knob_count <= 0:
         raise RuntimeError("knob_count must be > 0")
-    # Each coordinate round needs one anchor and at least one perturbed point.
-    if total_trials < 2 * knob_count:
-        raise RuntimeError(
-            f"hpo_trials={total_trials} is too small for coordinate search with {knob_count} knobs; "
-            f"need at least {2 * knob_count}"
-        )
+    # Smoke compatibility: allow ultra-tiny runs (e.g., hpo_trials=1),
+    # interpreting it as one anchor-only candidate per knob.
+    if total_trials <= 1:
+        return [1] * int(knob_count)
+
+    # If user passes a very small trial budget, distribute at least one trial per knob.
+    if total_trials < int(knob_count):
+        return [1] * int(knob_count)
+
+    # Normal path: split trials across knobs.
     base = int(total_trials) // int(knob_count)
     rem = int(total_trials) % int(knob_count)
     out = [base + (1 if i < rem else 0) for i in range(knob_count)]
-    if any(x < 2 for x in out):
+    if any(x < 1 for x in out):
         raise RuntimeError(f"invalid coordinate trial split: {out}")
     return out
 
