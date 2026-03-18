@@ -4,6 +4,14 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
+ENV_FILE="${PIPELINE_ENV_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/moe-pipeline.env}"
+if [[ -f "$ENV_FILE" ]]; then
+  set -a
+  # shellcheck disable=SC1090
+  source "$ENV_FILE"
+  set +a
+fi
+
 GPUS="${GPUS:-0,1}"
 SUITE_ROOT="${SUITE_ROOT:-runs/paper_suite}"
 
@@ -22,6 +30,11 @@ export EXPERT_TYPES="${EXPERT_TYPES:-lora,ffn}"
 export NUM_EXPERTS="${NUM_EXPERTS:-4}"
 export TOP_K="${TOP_K:-2}"
 export EXPERT_SETTINGS="${EXPERT_SETTINGS:-4:2,6:3}"
+export GPU_MEM_UTIL_RATIO="${GPU_MEM_UTIL_RATIO:-0.8}"
+export MAX_WORKERS_PER_GPU="${MAX_WORKERS_PER_GPU:-4}"
+export MAX_FAILED_JOBS="${MAX_FAILED_JOBS:-3}"
+export PIPELINE_NOTIFY_EMAILS="${PIPELINE_NOTIFY_EMAILS:-}"
+export PIPELINE_NOTIFY_EVENTS="${PIPELINE_NOTIFY_EVENTS:-pipeline_done,pipeline_failed,failure_limit_reached}"
 
 IFS=',' read -r -a GPU_ARR <<< "$GPUS"
 if [[ "${#GPU_ARR[@]}" -le 1 ]]; then

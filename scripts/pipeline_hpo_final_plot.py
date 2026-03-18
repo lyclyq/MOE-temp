@@ -10,12 +10,16 @@ import math
 import os
 import random
 import signal
+import shutil
+import smtplib
+import socket
 import statistics
 import subprocess
 import sys
 import tempfile
 import threading
 import time
+import traceback
 from collections import deque
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, as_completed, wait
 from contextlib import contextmanager
@@ -138,9 +142,10 @@ def _append_jsonl(path: Path, payload: Dict[str, Any]) -> None:
 
 
 class ProgressTracker:
-    def __init__(self, status_root: Path) -> None:
+    def __init__(self, status_root: Path, *, notifier: "PipelineNotifier | None" = None) -> None:
         self._lock = threading.Lock()
         self.status_root = status_root
+        self.notifier = notifier
         self.progress_path = status_root / "progress.json"
         self.events_path = status_root / "progress_events.jsonl"
         self.failures_path = status_root / "worker_failures.jsonl"
@@ -198,11 +203,29 @@ class ProgressTracker:
         with self._lock:
             self._current_phase = str(phase_name)
             self._flush(event="phase_start", extra={"phase": str(phase_name)})
+            if self.notifier is not None:
+                self.notifier.notify(
+                    "phase_start",
+                    subject=f"[moe-pipeline] phase start: {phase_name}",
+                    lines=[
+                        f"phase={phase_name}",
+                        f"status_root={self.status_root}",
+                    ],
+                )
 
     def clear_phase(self, phase_name: str) -> None:
         with self._lock:
             self._current_phase = ""
             self._flush(event="phase_end", extra={"phase": str(phase_name)})
+            if self.notifier is not None:
+                self.notifier.notify(
+                    "phase_end",
+                    subject=f"[moe-pipeline] phase end: {phase_name}",
+                    lines=[
+                        f"phase={phase_name}",
+                        f"status_root={self.status_root}",
+                    ],
+                )
 
     def add_planned_jobs(self, phase_name: str, n: int) -> None:
         if n <= 0:
@@ -253,7 +276,7 @@ class ProgressTracker:
             _append_jsonl(self.failures_path, payload)
             self._flush(event="job_retry", extra=payload)
 
-    def job_failed(self, *, phase_name: str, job: "RunJob", gpu: int, err: str, log_path: Path) -> None:
+    def job_failed(self, *, phase_name: str, job: "RunJob", gpu: int, err: str, log_path: Path) -> int:
         payload = {
             "phase": str(phase_name),
             "method": str(job.method_alias),
@@ -267,6 +290,125 @@ class ProgressTracker:
             self._failed_jobs += 1
             _append_jsonl(self.failures_path, {"ts_epoch": float(_ts_now()), **payload})
             self._flush(event="job_failed", extra=payload)
+            if self.notifier is not None:
+                self.notifier.notify(
+                    "job_failed",
+                    subject=f"[moe-pipeline] job failed: {phase_name}",
+                    lines=[
+                        f"phase={phase_name}",
+                        f"method={job.method_alias}",
+                        f"candidate={job.candidate_id}",
+                        f"seed={job.seed}",
+                        f"gpu={gpu}",
+                        f"log_path={log_path}",
+                        f"error={err}",
+                        f"failed_jobs={self._failed_jobs}",
+                    ],
+                )
+            return int(self._failed_jobs)
+
+    def failed_jobs(self) -> int:
+        with self._lock:
+            return int(self._failed_jobs)
+
+
+class PipelineNotifier:
+    def __init__(self, emails: Sequence[str], events: Sequence[str], context: Dict[str, Any]) -> None:
+        self.emails = [str(x).strip() for x in emails if str(x).strip()]
+        self.events = {str(x).strip() for x in events if str(x).strip()}
+        self.context = dict(context)
+
+    def enabled_for(self, event: str) -> bool:
+        return bool(self.emails) and (str(event) in self.events)
+
+    def notify(self, event: str, *, subject: str, lines: Sequence[str]) -> None:
+        if not self.enabled_for(event):
+            return
+        _send_mail_notification(self.emails, subject=subject, lines=list(lines), context=self.context)
+
+
+def _send_mail_notification(
+    emails: Sequence[str],
+    *,
+    subject: str,
+    lines: Sequence[str],
+    context: Dict[str, Any],
+) -> None:
+    recipients = [str(x).strip() for x in emails if str(x).strip()]
+    if not recipients:
+        return
+
+    host = socket.gethostname()
+    body_lines = [
+        f"host={host}",
+        f"cwd={ROOT}",
+    ]
+    for k, v in sorted(context.items(), key=lambda x: x[0]):
+        body_lines.append(f"{k}={v}")
+    body_lines.append("")
+    body_lines.extend(str(x) for x in lines)
+    body = "\n".join(body_lines) + "\n"
+
+    mail_bin = shutil.which("mail")
+    if mail_bin is not None:
+        try:
+            subprocess.run([mail_bin, "-s", str(subject), *recipients], input=body, text=True, check=True)
+            return
+        except Exception:
+            pass
+
+    sendmail_bin = shutil.which("sendmail")
+    if sendmail_bin is not None:
+        msg = [
+            f"Subject: {subject}",
+            "Content-Type: text/plain; charset=utf-8",
+            f"To: {', '.join(recipients)}",
+            "",
+            body,
+        ]
+        try:
+            subprocess.run([sendmail_bin, "-t"], input="\n".join(msg), text=True, check=True)
+            return
+        except Exception:
+            pass
+
+    smtp_host = str(os.environ.get("PIPELINE_SMTP_HOST", "")).strip()
+    smtp_user = str(os.environ.get("PIPELINE_SMTP_USER", "")).strip()
+    smtp_password = str(os.environ.get("PIPELINE_SMTP_PASSWORD", "")).strip()
+    smtp_from = str(os.environ.get("PIPELINE_SMTP_FROM", smtp_user)).strip()
+    smtp_port_raw = str(os.environ.get("PIPELINE_SMTP_PORT", "465")).strip() or "465"
+    smtp_ssl = str(os.environ.get("PIPELINE_SMTP_SSL", "1")).strip().lower() not in {"0", "false", "no"}
+    if smtp_host and smtp_user and smtp_password and smtp_from:
+        try:
+            smtp_port = int(smtp_port_raw)
+        except Exception:
+            smtp_port = 465
+        msg = [
+            f"Subject: {subject}",
+            f"From: {smtp_from}",
+            f"To: {', '.join(recipients)}",
+            "Content-Type: text/plain; charset=utf-8",
+            "",
+            body,
+        ]
+        try:
+            if smtp_ssl:
+                with smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=30) as server:
+                    server.login(smtp_user, smtp_password)
+                    server.sendmail(smtp_from, recipients, "\n".join(msg))
+            else:
+                with smtplib.SMTP(smtp_host, smtp_port, timeout=30) as server:
+                    server.ehlo()
+                    server.starttls()
+                    server.ehlo()
+                    server.login(smtp_user, smtp_password)
+                    server.sendmail(smtp_from, recipients, "\n".join(msg))
+            return
+        except Exception as e:
+            print(f"[notify] smtp send failed subject={subject} recipients={recipients} error={type(e).__name__}: {e}")
+            return
+
+    print(f"[notify] skipped subject={subject} recipients={recipients} (mail/sendmail/smtp unavailable)")
 
 
 def _safe_token(text: str) -> str:
@@ -1066,6 +1208,7 @@ def _run_jobs_group(
     logs_root: Path,
     progress: ProgressTracker | None,
     out: List[RunResult | None],
+    max_failed_jobs: int,
 ) -> None:
     if not indexed_jobs:
         return
@@ -1125,20 +1268,43 @@ def _run_jobs_group(
                 try:
                     rr = fut.result()
                 except Exception as e:  # noqa: BLE001
+                    failed_jobs = 1
                     if progress is not None:
-                        progress.job_failed(
+                        failed_jobs = progress.job_failed(
                             phase_name=phase_name,
                             job=job,
                             gpu=gpu,
                             err=f"{type(e).__name__}: {e}",
                             log_path=log_path,
                         )
-                    _STOP_EVENT.set()
-                    wait_shutdown = False
-                    for ff in fut_meta:
-                        ff.cancel()
-                    _terminate_active_processes(phase_name=phase_name)
-                    raise
+                    if failed_jobs >= max(1, int(max_failed_jobs)):
+                        if progress is not None and progress.notifier is not None:
+                            progress.notifier.notify(
+                                "failure_limit_reached",
+                                subject=f"[moe-pipeline] failure limit reached: {phase_name}",
+                                lines=[
+                                    f"phase={phase_name}",
+                                    f"failed_jobs={failed_jobs}",
+                                    f"max_failed_jobs={max_failed_jobs}",
+                                    f"last_job={job.method_alias}/{job.candidate_id}/s{job.seed}",
+                                    f"log_path={log_path}",
+                                    f"error={type(e).__name__}: {e}",
+                                ],
+                            )
+                        _STOP_EVENT.set()
+                        wait_shutdown = False
+                        for ff in fut_meta:
+                            ff.cancel()
+                        _terminate_active_processes(phase_name=phase_name)
+                        raise RuntimeError(
+                            f"failure limit reached in phase={phase_name}: "
+                            f"failed_jobs={failed_jobs} max_failed_jobs={max_failed_jobs}"
+                        ) from e
+                    print(
+                        f"[warn] phase={phase_name} method={job.method_alias} cand={job.candidate_id} "
+                        f"seed={job.seed} gpu={gpu} failed_jobs={failed_jobs}/{max_failed_jobs}; continuing"
+                    )
+                    continue
                 out[idx] = rr
                 if progress is not None:
                     progress.job_done(phase_name=phase_name, job=job, gpu=gpu, reused=bool(rr.reused))
@@ -1170,6 +1336,7 @@ def _run_jobs_parallel(
     probe_timeout_sec: float,
     disable_mem_probe: bool,
     max_workers_per_gpu: int,
+    max_failed_jobs: int,
 ) -> List[RunResult]:
     if not jobs:
         return []
@@ -1230,6 +1397,7 @@ def _run_jobs_parallel(
                 logs_root=logs_root,
                 progress=progress,
                 out=out,
+                max_failed_jobs=int(max_failed_jobs),
             )
             if progress is not None:
                 progress.note(
@@ -1429,11 +1597,21 @@ def main() -> None:
     p.add_argument("--local_grid_points", type=int, default=3)
     p.add_argument("--hpo_seed_base", type=int, default=20260311)
     p.add_argument("--retries", type=int, default=2, help="max retry count after a failed worker run")
-    p.add_argument("--gpu_mem_util_ratio", type=float, default=0.85, help="target gpu memory occupancy ratio for slot sizing")
+    p.add_argument("--gpu_mem_util_ratio", type=float, default=0.80, help="target gpu memory occupancy ratio for slot sizing")
     p.add_argument("--probe_steps", type=int, default=2, help="quick probe steps per memory group")
     p.add_argument("--probe_timeout_sec", type=float, default=600.0)
     p.add_argument("--disable_mem_probe", action="store_true")
-    p.add_argument("--max_workers_per_gpu", type=int, default=0, help="0 means no explicit cap")
+    p.add_argument("--max_workers_per_gpu", type=int, default=4, help="0 means no explicit cap")
+    p.add_argument("--max_failed_jobs", type=int, default=3, help="stop the whole pipeline after this many final job failures")
+    p.add_argument("--notify_emails", type=str, default=os.environ.get("PIPELINE_NOTIFY_EMAILS", ""))
+    p.add_argument(
+        "--notify_events",
+        type=str,
+        default=os.environ.get(
+            "PIPELINE_NOTIFY_EVENTS",
+            "pipeline_done,pipeline_failed,failure_limit_reached",
+        ),
+    )
     p.add_argument("--skip_mvp", action="store_true")
     p.add_argument("--set", action="append", default=[], help="extra key=value overrides passed to run.py")
     args = p.parse_args()
@@ -1483,6 +1661,9 @@ def main() -> None:
         "probe_timeout_sec": float(args.probe_timeout_sec),
         "disable_mem_probe": bool(args.disable_mem_probe),
         "max_workers_per_gpu": int(args.max_workers_per_gpu),
+        "max_failed_jobs": int(args.max_failed_jobs),
+        "notify_emails": [x for x in str(args.notify_emails).split(",") if x.strip()],
+        "notify_events": [x for x in str(args.notify_events).split(",") if x.strip()],
     }
     _ensure_manifest(out_dir / "pipeline_manifest.json", manifest)
 
@@ -1492,7 +1673,16 @@ def main() -> None:
     hpo_root.mkdir(parents=True, exist_ok=True)
     final_root.mkdir(parents=True, exist_ok=True)
 
-    progress = ProgressTracker(status_root)
+    notifier = PipelineNotifier(
+        emails=[x.strip() for x in str(args.notify_emails).split(",") if x.strip()],
+        events=[x.strip() for x in str(args.notify_events).split(",") if x.strip()],
+        context={
+            "out_dir": str(out_dir),
+            "config": str(args.config),
+            "gpus": ",".join(str(x) for x in gpus),
+        },
+    )
+    progress = ProgressTracker(status_root, notifier=notifier)
     probe_cache_path = status_root / "memory_probe_cache.json"
     probe_cache = _load_probe_cache(probe_cache_path)
 
@@ -1511,20 +1701,21 @@ def main() -> None:
     all_best_cfg: Dict[str, Dict[str, Any]] = {}
     global_hpo_rows: List[Dict[str, Any]] = []
 
-    for mi, spec in enumerate(specs):
-        print(f"\n[method] {spec.alias} -> {spec.method_name}")
-        progress.note("method_start", {"method": spec.alias, "phase": "hpo"})
+    try:
+        for mi, spec in enumerate(specs):
+            print(f"\n[method] {spec.alias} -> {spec.method_name}")
+            progress.note("method_start", {"method": spec.alias, "phase": "hpo"})
 
-        method_dir = hpo_root / spec.alias
-        method_dir.mkdir(parents=True, exist_ok=True)
+            method_dir = hpo_root / spec.alias
+            method_dir.mkdir(parents=True, exist_ok=True)
 
-        with _file_lock(
-            locks_root / f"hpo_method_{_safe_token(spec.alias)}.lock",
-            tracker=progress,
-            label=f"hpo_method:{spec.alias}",
-        ):
-            trial_alloc = _split_coordinate_trials(int(args.hpo_trials), len(spec.knobs))
-            current_params = _default_params(spec=spec, base_cfg=base_cfg)
+            with _file_lock(
+                locks_root / f"hpo_method_{_safe_token(spec.alias)}.lock",
+                tracker=progress,
+                label=f"hpo_method:{spec.alias}",
+            ):
+                trial_alloc = _split_coordinate_trials(int(args.hpo_trials), len(spec.knobs))
+                current_params = _default_params(spec=spec, base_cfg=base_cfg)
 
             all_candidates: List[Candidate] = []
             all_results: List[RunResult] = []
@@ -1591,6 +1782,7 @@ def main() -> None:
                         probe_timeout_sec=float(args.probe_timeout_sec),
                         disable_mem_probe=bool(args.disable_mem_probe),
                         max_workers_per_gpu=max(0, int(args.max_workers_per_gpu)),
+                        max_failed_jobs=max(1, int(args.max_failed_jobs)),
                     )
                 round_agg = _agg_candidate_scores(round_results, coord_candidates, spec.alias)
                 if not round_agg:
@@ -1695,6 +1887,7 @@ def main() -> None:
                         probe_timeout_sec=float(args.probe_timeout_sec),
                         disable_mem_probe=bool(args.disable_mem_probe),
                         max_workers_per_gpu=max(0, int(args.max_workers_per_gpu)),
+                        max_failed_jobs=max(1, int(args.max_failed_jobs)),
                     )
 
             all_candidates = list(all_candidates) + list(local)
@@ -1760,21 +1953,21 @@ def main() -> None:
             )
             global_hpo_rows.extend(all_agg)
 
-        progress.note("method_done", {"method": spec.alias, "phase": "hpo"})
+            progress.note("method_done", {"method": spec.alias, "phase": "hpo"})
 
-    _write_csv(hpo_root / "hpo_agg_all_methods.csv", global_hpo_rows)
-    (hpo_root / "best_configs.json").write_text(json.dumps(all_best_cfg, indent=2, sort_keys=True), encoding="utf-8")
-    _run_hpo_exports(hpo_root)
+        _write_csv(hpo_root / "hpo_agg_all_methods.csv", global_hpo_rows)
+        (hpo_root / "best_configs.json").write_text(json.dumps(all_best_cfg, indent=2, sort_keys=True), encoding="utf-8")
+        _run_hpo_exports(hpo_root)
 
-    final_results: List[RunResult] = []
-    for spec in specs:
-        progress.note("method_start", {"method": spec.alias, "phase": "final"})
-        best = all_best_cfg[spec.alias]
-        best_cand = Candidate(
-            cid=str(best["candidate_id"]),
-            stage="best",
-            params={str(k): float(v) for k, v in dict(best["params"]).items()},
-        )
+        final_results: List[RunResult] = []
+        for spec in specs:
+            progress.note("method_start", {"method": spec.alias, "phase": "final"})
+            best = all_best_cfg[spec.alias]
+            best_cand = Candidate(
+                cid=str(best["candidate_id"]),
+                stage="best",
+                params={str(k): float(v) for k, v in dict(best["params"]).items()},
+            )
 
         method_final_jobs: List[RunJob] = []
         order = 0
@@ -1803,93 +1996,128 @@ def main() -> None:
             )
             order += 1
 
-        with _file_lock(
-            locks_root / f"final_method_{_safe_token(spec.alias)}.lock",
-            tracker=progress,
-            label=f"final_method:{spec.alias}",
-        ):
-            method_results = _run_jobs_parallel(
-                jobs=method_final_jobs,
-                config=args.config,
-                gpus=gpus,
-                retries=max(0, int(args.retries)),
-                phase_name=f"final:{spec.alias}",
-                base_cfg=base_cfg,
-                logs_root=logs_root,
-                progress=progress,
-                probe_cache=probe_cache,
-                probe_cache_path=probe_cache_path,
-                gpu_mem_util_ratio=float(args.gpu_mem_util_ratio),
-                probe_steps=max(1, int(args.probe_steps)),
-                probe_timeout_sec=float(args.probe_timeout_sec),
-                disable_mem_probe=bool(args.disable_mem_probe),
-                max_workers_per_gpu=max(0, int(args.max_workers_per_gpu)),
+            with _file_lock(
+                locks_root / f"final_method_{_safe_token(spec.alias)}.lock",
+                tracker=progress,
+                label=f"final_method:{spec.alias}",
+            ):
+                method_results = _run_jobs_parallel(
+                    jobs=method_final_jobs,
+                    config=args.config,
+                    gpus=gpus,
+                    retries=max(0, int(args.retries)),
+                    phase_name=f"final:{spec.alias}",
+                    base_cfg=base_cfg,
+                    logs_root=logs_root,
+                    progress=progress,
+                    probe_cache=probe_cache,
+                    probe_cache_path=probe_cache_path,
+                    gpu_mem_util_ratio=float(args.gpu_mem_util_ratio),
+                    probe_steps=max(1, int(args.probe_steps)),
+                    probe_timeout_sec=float(args.probe_timeout_sec),
+                    disable_mem_probe=bool(args.disable_mem_probe),
+                    max_workers_per_gpu=max(0, int(args.max_workers_per_gpu)),
+                    max_failed_jobs=max(1, int(args.max_failed_jobs)),
+                )
+            final_results.extend(method_results)
+            progress.note("method_done", {"method": spec.alias, "phase": "final"})
+
+        final_per_run: List[Dict[str, Any]] = []
+        for rr in final_results:
+            final_per_run.append(
+                {
+                    "method": rr.method_alias,
+                    "seed": rr.seed,
+                    "best_val_acc": rr.best_val_acc,
+                    "final_val_acc": rr.final_val_acc,
+                    "score_05_05": rr.score_05_05,
+                    "reused": rr.reused,
+                    "summary_json": rr.out_json,
+                    "curve_csv": rr.out_curve,
+                }
             )
-        final_results.extend(method_results)
-        progress.note("method_done", {"method": spec.alias, "phase": "final"})
+        _write_csv(final_root / "final_per_run.csv", final_per_run)
 
-    final_per_run: List[Dict[str, Any]] = []
-    for rr in final_results:
-        final_per_run.append(
-            {
-                "method": rr.method_alias,
-                "seed": rr.seed,
-                "best_val_acc": rr.best_val_acc,
-                "final_val_acc": rr.final_val_acc,
-                "score_05_05": rr.score_05_05,
-                "reused": rr.reused,
-                "summary_json": rr.out_json,
-                "curve_csv": rr.out_curve,
-            }
+        final_agg_rows: List[Dict[str, Any]] = []
+        by_method: Dict[str, List[RunResult]] = {}
+        for rr in final_results:
+            by_method.setdefault(rr.method_alias, []).append(rr)
+        for m, rs in sorted(by_method.items(), key=lambda x: x[0]):
+            bests = [x.best_val_acc for x in rs]
+            finals = [x.final_val_acc for x in rs]
+            scores = [x.score_05_05 for x in rs]
+            final_agg_rows.append(
+                {
+                    "method": m,
+                    "n_seeds": len(rs),
+                    "best_mean": float(statistics.fmean(bests)),
+                    "best_std": float(statistics.pstdev(bests) if len(bests) > 1 else 0.0),
+                    "final_mean": float(statistics.fmean(finals)),
+                    "final_std": float(statistics.pstdev(finals) if len(finals) > 1 else 0.0),
+                    "score_mean": float(statistics.fmean(scores)),
+                    "score_std": float(statistics.pstdev(scores) if len(scores) > 1 else 0.0),
+                }
+            )
+        final_agg_rows.sort(key=lambda x: float(x["score_mean"]), reverse=True)
+        _write_csv(final_root / "final_agg.csv", final_agg_rows)
+        (final_root / "final_best_configs_snapshot.json").write_text(
+            json.dumps(all_best_cfg, indent=2, sort_keys=True),
+            encoding="utf-8",
         )
-    _write_csv(final_root / "final_per_run.csv", final_per_run)
 
-    final_agg_rows: List[Dict[str, Any]] = []
-    by_method: Dict[str, List[RunResult]] = {}
-    for rr in final_results:
-        by_method.setdefault(rr.method_alias, []).append(rr)
-    for m, rs in sorted(by_method.items(), key=lambda x: x[0]):
-        bests = [x.best_val_acc for x in rs]
-        finals = [x.final_val_acc for x in rs]
-        scores = [x.score_05_05 for x in rs]
-        final_agg_rows.append(
-            {
-                "method": m,
-                "n_seeds": len(rs),
-                "best_mean": float(statistics.fmean(bests)),
-                "best_std": float(statistics.pstdev(bests) if len(bests) > 1 else 0.0),
-                "final_mean": float(statistics.fmean(finals)),
-                "final_std": float(statistics.pstdev(finals) if len(finals) > 1 else 0.0),
-                "score_mean": float(statistics.fmean(scores)),
-                "score_std": float(statistics.pstdev(scores) if len(scores) > 1 else 0.0),
-            }
+        _run_plotters(
+            final_dir=final_root,
+            methods=[s.alias for s in specs],
+            final_seeds=final_seeds,
+            skip_mvp=bool(args.skip_mvp),
         )
-    final_agg_rows.sort(key=lambda x: float(x["score_mean"]), reverse=True)
-    _write_csv(final_root / "final_agg.csv", final_agg_rows)
-    (final_root / "final_best_configs_snapshot.json").write_text(
-        json.dumps(all_best_cfg, indent=2, sort_keys=True),
-        encoding="utf-8",
-    )
 
-    _run_plotters(
-        final_dir=final_root,
-        methods=[s.alias for s in specs],
-        final_seeds=final_seeds,
-        skip_mvp=bool(args.skip_mvp),
-    )
-
-    progress.note(
-        "pipeline_done",
-        {
-            "out_dir": str(out_dir),
-            "hpo_best": str(hpo_root / "best_configs.json"),
-            "final_agg": str(final_root / "final_agg.csv"),
-            "progress_file": str(status_root / "progress.json"),
-            "gpu_logs_root": str(logs_root),
-            "failure_log": str(status_root / "worker_failures.jsonl"),
-            "probe_cache": str(probe_cache_path),
-        },
-    )
+        progress.note(
+            "pipeline_done",
+            {
+                "out_dir": str(out_dir),
+                "hpo_best": str(hpo_root / "best_configs.json"),
+                "final_agg": str(final_root / "final_agg.csv"),
+                "progress_file": str(status_root / "progress.json"),
+                "gpu_logs_root": str(logs_root),
+                "failure_log": str(status_root / "worker_failures.jsonl"),
+                "probe_cache": str(probe_cache_path),
+            },
+        )
+        notifier.notify(
+            "pipeline_done",
+            subject=f"[moe-pipeline] done: {out_dir.name}",
+            lines=[
+                f"out_dir={out_dir}",
+                f"hpo_best={hpo_root / 'best_configs.json'}",
+                f"final_agg={final_root / 'final_agg.csv'}",
+                f"progress_file={status_root / 'progress.json'}",
+                f"failure_log={status_root / 'worker_failures.jsonl'}",
+            ],
+        )
+    except Exception as e:
+        progress.note(
+            "pipeline_failed",
+            {
+                "out_dir": str(out_dir),
+                "error": f"{type(e).__name__}: {e}",
+                "failed_jobs": int(progress.failed_jobs()),
+                "failure_log": str(status_root / "worker_failures.jsonl"),
+            },
+        )
+        notifier.notify(
+            "pipeline_failed",
+            subject=f"[moe-pipeline] failed: {out_dir.name}",
+            lines=[
+                f"out_dir={out_dir}",
+                f"error={type(e).__name__}: {e}",
+                f"failed_jobs={progress.failed_jobs()}",
+                f"failure_log={status_root / 'worker_failures.jsonl'}",
+                "",
+                traceback.format_exc(),
+            ],
+        )
+        raise
 
     print(f"\n[pipeline done] out_dir={out_dir}")
     print(f"[hpo best] {(hpo_root / 'best_configs.json')}")

@@ -20,6 +20,12 @@ EXPERT_TYPES="${EXPERT_TYPES:-lora,ffn}"
 NUM_EXPERTS="${NUM_EXPERTS:-4}"
 TOP_K="${TOP_K:-2}"
 SUITE_ROOT="${SUITE_ROOT:-runs/paper_suite}"
+GPU_MEM_UTIL_RATIO="${GPU_MEM_UTIL_RATIO:-0.8}"
+MAX_WORKERS_PER_GPU="${MAX_WORKERS_PER_GPU:-4}"
+MAX_FAILED_JOBS="${MAX_FAILED_JOBS:-3}"
+PIPELINE_NOTIFY_EMAILS="${PIPELINE_NOTIFY_EMAILS:-}"
+PIPELINE_NOTIFY_EVENTS="${PIPELINE_NOTIFY_EVENTS:-pipeline_done,pipeline_failed,failure_limit_reached}"
+IFS=',' read -r -a EXPERT_ARR <<< "$EXPERT_TYPES"
 
 case "$BACKBONE" in
   roberta) HF_NAME="roberta-base" ;;
@@ -86,6 +92,11 @@ for expert in "${EXPERT_ARR[@]}"; do
       --eval_every "$EVAL_EVERY" \
       --local_topk "$LOCAL_TOPK" \
       --local_grid_points "$LOCAL_GRID_POINTS" \
+      --gpu_mem_util_ratio "$GPU_MEM_UTIL_RATIO" \
+      --max_workers_per_gpu "$MAX_WORKERS_PER_GPU" \
+      --max_failed_jobs "$MAX_FAILED_JOBS" \
+      --notify_emails "$PIPELINE_NOTIFY_EMAILS" \
+      --notify_events "$PIPELINE_NOTIFY_EVENTS" \
       --set "model.backbone_backend=hf" \
       --set "model.hf_load_pretrained=true" \
       --set "model.backbone=$BACKBONE" \
@@ -105,4 +116,3 @@ for expert in "${EXPERT_ARR[@]}"; do
 done
 
 echo "done: ${SUITE_ROOT}/minimal_ablation"
-IFS=',' read -r -a EXPERT_ARR <<< "$EXPERT_TYPES"
