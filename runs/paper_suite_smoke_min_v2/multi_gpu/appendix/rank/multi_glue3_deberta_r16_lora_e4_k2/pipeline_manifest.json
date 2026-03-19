@@ -1,0 +1,48 @@
+{
+  "config": "configs/multitask_glue3_rte_mrpc_cola_real.yaml",
+  "disable_mem_probe": false,
+  "eval_every": 1,
+  "extra_set": [
+    "model.backbone_backend=hf",
+    "model.hf_load_pretrained=true",
+    "model.backbone=deberta",
+    "model.hf_pretrained_name=microsoft/deberta-v3-base",
+    "model.expert_type=lora",
+    "model.num_experts=4",
+    "model.top_k=2",
+    "model.lora_rank=16",
+    "model.lora_alpha=16"
+  ],
+  "final_seeds": [
+    1
+  ],
+  "final_steps": 1,
+  "gpu_mem_util_ratio": 0.8,
+  "hpo_seed_base": 20260311,
+  "hpo_seeds": [
+    1
+  ],
+  "hpo_steps": 1,
+  "hpo_strategy": "coordinate_then_variance_topk_local_grid",
+  "hpo_trials": 1,
+  "local_grid_points": 1,
+  "local_topk": 1,
+  "max_failed_jobs": 3,
+  "max_workers_per_gpu": 4,
+  "methods": [
+    "baseline",
+    "ours"
+  ],
+  "notify_emails": [
+    "yuli0398@uni.sydney.edu.au",
+    "2830044272@qq.com"
+  ],
+  "notify_events": [
+    "pipeline_done",
+    "pipeline_failed",
+    "failure_limit_reached"
+  ],
+  "probe_steps": 2,
+  "probe_timeout_sec": 600.0,
+  "retries": 2
+}

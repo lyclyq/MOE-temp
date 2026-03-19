@@ -1969,32 +1969,32 @@ def main() -> None:
                 params={str(k): float(v) for k, v in dict(best["params"]).items()},
             )
 
-        method_final_jobs: List[RunJob] = []
-        order = 0
-        for sd in final_seeds:
-            out_json = final_root / f"{spec.alias}_s{sd}.json"
-            out_curve = final_root / f"{spec.alias}_s{sd}_curve.csv"
-            method_final_jobs.append(
-                RunJob(
-                    order=order,
-                    method_alias=spec.alias,
-                    candidate_id=best_cand.cid,
-                    seed=int(sd),
-                    steps=int(args.final_steps),
-                    eval_every=int(args.eval_every),
-                    out_json=out_json,
-                    out_curve=out_curve,
-                    set_kv=_to_set_args(
-                        method=spec,
-                        candidate=best_cand,
-                        cli_set=args.set,
+            method_final_jobs: List[RunJob] = []
+            order = 0
+            for sd in final_seeds:
+                out_json = final_root / f"{spec.alias}_s{sd}.json"
+                out_curve = final_root / f"{spec.alias}_s{sd}_curve.csv"
+                method_final_jobs.append(
+                    RunJob(
+                        order=order,
+                        method_alias=spec.alias,
+                        candidate_id=best_cand.cid,
                         seed=int(sd),
                         steps=int(args.final_steps),
                         eval_every=int(args.eval_every),
-                    ),
+                        out_json=out_json,
+                        out_curve=out_curve,
+                        set_kv=_to_set_args(
+                            method=spec,
+                            candidate=best_cand,
+                            cli_set=args.set,
+                            seed=int(sd),
+                            steps=int(args.final_steps),
+                            eval_every=int(args.eval_every),
+                        ),
+                    )
                 )
-            )
-            order += 1
+                order += 1
 
             with _file_lock(
                 locks_root / f"final_method_{_safe_token(spec.alias)}.lock",
@@ -2065,12 +2065,35 @@ def main() -> None:
             encoding="utf-8",
         )
 
-        _run_plotters(
-            final_dir=final_root,
-            methods=[s.alias for s in specs],
-            final_seeds=final_seeds,
-            skip_mvp=bool(args.skip_mvp),
-        )
+        plotter_error = None
+        try:
+            _run_plotters(
+                final_dir=final_root,
+                methods=[s.alias for s in specs],
+                final_seeds=final_seeds,
+                skip_mvp=bool(args.skip_mvp),
+            )
+        except Exception as e:  # noqa: BLE001
+            plotter_error = f"{type(e).__name__}: {e}"
+            progress.note(
+                "plotters_failed",
+                {
+                    "out_dir": str(out_dir),
+                    "final_dir": str(final_root),
+                    "error": plotter_error,
+                },
+            )
+            notifier.notify(
+                "plotters_failed",
+                subject=f"[moe-pipeline] plotters failed: {out_dir.name}",
+                lines=[
+                    f"out_dir={out_dir}",
+                    f"final_dir={final_root}",
+                    f"error={plotter_error}",
+                    "pipeline will continue without plot artifacts",
+                ],
+            )
+            print(f"[warn] plotters failed for out_dir={out_dir}: {plotter_error}")
 
         progress.note(
             "pipeline_done",
@@ -2082,6 +2105,7 @@ def main() -> None:
                 "gpu_logs_root": str(logs_root),
                 "failure_log": str(status_root / "worker_failures.jsonl"),
                 "probe_cache": str(probe_cache_path),
+                "plotters_failed": None if plotter_error is None else str(plotter_error),
             },
         )
         notifier.notify(
@@ -2093,6 +2117,7 @@ def main() -> None:
                 f"final_agg={final_root / 'final_agg.csv'}",
                 f"progress_file={status_root / 'progress.json'}",
                 f"failure_log={status_root / 'worker_failures.jsonl'}",
+                f"plotters_failed={plotter_error}",
             ],
         )
     except Exception as e:
