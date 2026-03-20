@@ -24,11 +24,12 @@ EVAL_EVERY="${EVAL_EVERY:-1}"
 LOCAL_TOPK="${LOCAL_TOPK:-1}"
 LOCAL_GRID_POINTS="${LOCAL_GRID_POINTS:-1}"
 SKIP_MVP="${SKIP_MVP:-1}"
+ROUTING_MODE="${ROUTING_MODE:-topk}"
 GPU_MEM_UTIL_RATIO="${GPU_MEM_UTIL_RATIO:-0.8}"
 MAX_WORKERS_PER_GPU="${MAX_WORKERS_PER_GPU:-4}"
 MAX_FAILED_JOBS="${MAX_FAILED_JOBS:-3}"
 PIPELINE_NOTIFY_EMAILS="${PIPELINE_NOTIFY_EMAILS:-}"
-PIPELINE_NOTIFY_EVENTS="${PIPELINE_NOTIFY_EVENTS:-pipeline_done,pipeline_failed,failure_limit_reached}"
+PIPELINE_NOTIFY_EVENTS="${PIPELINE_NOTIFY_EVENTS:-phase_start,phase_end,job_failed,pipeline_done,pipeline_failed,failure_limit_reached}"
 
 IFS=',' read -r -a GPU_ARR <<< "$GPUS"
 if [[ "${#GPU_ARR[@]}" -le 1 ]]; then

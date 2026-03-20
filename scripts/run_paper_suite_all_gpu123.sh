@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+. "$ROOT/scripts/suite_progress_lib.sh"
 
 ENV_FILE="${PIPELINE_ENV_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/moe-pipeline.env}"
 if [[ -f "$ENV_FILE" ]]; then
@@ -18,10 +19,10 @@ SUITE_ROOT="${SUITE_ROOT:-runs/paper_suite}"
 export HPO_SEEDS="${HPO_SEEDS:-2,3}"
 export FINAL_SEEDS="${FINAL_SEEDS:-2,3,5,7,11}"
 export HPO_TRIALS="${HPO_TRIALS:-96}"
-export HPO_STEPS="${HPO_STEPS:-80}"
-export HPO_STEPS_SINGLE="${HPO_STEPS_SINGLE:-100}"
-export HPO_STEPS_MULTI="${HPO_STEPS_MULTI:-80}"
-export FINAL_STEPS="${FINAL_STEPS:-800}"
+export HPO_STEPS="${HPO_STEPS:-150}"
+export HPO_STEPS_SINGLE="${HPO_STEPS_SINGLE:-150}"
+export HPO_STEPS_MULTI="${HPO_STEPS_MULTI:-150}"
+export FINAL_STEPS="${FINAL_STEPS:-1000}"
 export EVAL_EVERY="${EVAL_EVERY:-50}"
 export LOCAL_TOPK="${LOCAL_TOPK:-3}"
 export LOCAL_GRID_POINTS="${LOCAL_GRID_POINTS:-3}"
@@ -29,12 +30,13 @@ export SKIP_MVP="${SKIP_MVP:-0}"
 export EXPERT_TYPES="${EXPERT_TYPES:-lora,ffn}"
 export NUM_EXPERTS="${NUM_EXPERTS:-4}"
 export TOP_K="${TOP_K:-2}"
+export ROUTING_MODE="${ROUTING_MODE:-topk}"
 export EXPERT_SETTINGS="${EXPERT_SETTINGS:-4:2,6:3}"
 export GPU_MEM_UTIL_RATIO="${GPU_MEM_UTIL_RATIO:-0.8}"
 export MAX_WORKERS_PER_GPU="${MAX_WORKERS_PER_GPU:-4}"
 export MAX_FAILED_JOBS="${MAX_FAILED_JOBS:-3}"
 export PIPELINE_NOTIFY_EMAILS="${PIPELINE_NOTIFY_EMAILS:-}"
-export PIPELINE_NOTIFY_EVENTS="${PIPELINE_NOTIFY_EVENTS:-pipeline_done,pipeline_failed,failure_limit_reached}"
+export PIPELINE_NOTIFY_EVENTS="${PIPELINE_NOTIFY_EVENTS:-phase_start,phase_end,job_failed,pipeline_done,pipeline_failed,failure_limit_reached}"
 
 IFS=',' read -r -a GPU_ARR <<< "$GPUS"
 if [[ "${#GPU_ARR[@]}" -le 1 ]]; then
@@ -51,8 +53,26 @@ fi
 
 export GPUS
 export SUITE_ROOT
+suite_progress_setup_root
+rm -f "${SUITE_PROGRESS_ROOT}/monitor.stop"
+
+MONITOR_LOG="${SUITE_PROGRESS_ROOT}/monitor.log"
+python -u scripts/suite_progress.py monitor \
+  --root "$SUITE_PROGRESS_ROOT" \
+  --groups "single_task,multi_task,minimal_ablation,appendix" \
+  --interval "${SUITE_PROGRESS_INTERVAL:-15}" \
+  2>&1 | tee -a "$MONITOR_LOG" &
+SUITE_MONITOR_PID=$!
+cleanup_suite_monitor() {
+  python scripts/suite_progress.py stop --root "$SUITE_PROGRESS_ROOT" >/dev/null 2>&1 || true
+  if [[ -n "${SUITE_MONITOR_PID:-}" ]]; then
+    wait "$SUITE_MONITOR_PID" 2>/dev/null || true
+  fi
+}
+trap cleanup_suite_monitor EXIT
 
 echo "[formal-all] suite_root=$SUITE_ROOT gpus=$GPUS card_mode=$CARD_MODE queue_by_gpu=$QUEUE_BY_GPU"
+echo "[formal-all] suite monitor log=$MONITOR_LOG"
 
 if [[ "$QUEUE_BY_GPU" == "1" ]]; then
   GPU_A="$(echo "${GPU_ARR[0]}" | xargs)"

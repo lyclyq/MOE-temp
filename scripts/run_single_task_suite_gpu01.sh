@@ -3,13 +3,14 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+. "$ROOT/scripts/suite_progress_lib.sh"
 
 GPUS="${GPUS:-0,1}"
 HPO_SEEDS="${HPO_SEEDS:-2,3}"
 FINAL_SEEDS="${FINAL_SEEDS:-2,3,5,7,11}"
 HPO_TRIALS="${HPO_TRIALS:-96}"
-HPO_STEPS="${HPO_STEPS:-100}"
-FINAL_STEPS="${FINAL_STEPS:-800}"
+HPO_STEPS="${HPO_STEPS:-150}"
+FINAL_STEPS="${FINAL_STEPS:-1000}"
 EVAL_EVERY="${EVAL_EVERY:-50}"
 LOCAL_TOPK="${LOCAL_TOPK:-3}"
 LOCAL_GRID_POINTS="${LOCAL_GRID_POINTS:-3}"
@@ -19,16 +20,22 @@ TASKS="${TASKS:-rte,mrpc,sst2}"
 EXPERT_TYPES="${EXPERT_TYPES:-lora,ffn}"
 NUM_EXPERTS="${NUM_EXPERTS:-4}"
 TOP_K="${TOP_K:-2}"
+ROUTING_MODE="${ROUTING_MODE:-topk}"
 SUITE_ROOT="${SUITE_ROOT:-runs/paper_suite}"
 GPU_MEM_UTIL_RATIO="${GPU_MEM_UTIL_RATIO:-0.8}"
 MAX_WORKERS_PER_GPU="${MAX_WORKERS_PER_GPU:-4}"
 MAX_FAILED_JOBS="${MAX_FAILED_JOBS:-3}"
 PIPELINE_NOTIFY_EMAILS="${PIPELINE_NOTIFY_EMAILS:-}"
-PIPELINE_NOTIFY_EVENTS="${PIPELINE_NOTIFY_EVENTS:-pipeline_done,pipeline_failed,failure_limit_reached}"
+PIPELINE_NOTIFY_EVENTS="${PIPELINE_NOTIFY_EVENTS:-phase_start,phase_end,job_failed,pipeline_done,pipeline_failed,failure_limit_reached}"
 
 IFS=',' read -r -a BACKBONE_ARR <<< "$BACKBONES"
 IFS=',' read -r -a TASK_ARR <<< "$TASKS"
 IFS=',' read -r -a EXPERT_ARR <<< "$EXPERT_TYPES"
+suite_progress_setup_root
+
+TOTAL_RUNS=$(( ${#BACKBONE_ARR[@]} * ${#TASK_ARR[@]} * ${#EXPERT_ARR[@]} ))
+suite_progress_init_group "single_task" "$TOTAL_RUNS"
+RUN_INDEX=0
 
 EXTRA_ARGS=()
 if [[ "${SKIP_MVP:-0}" == "1" ]]; then
@@ -70,6 +77,9 @@ for backbone in "${BACKBONE_ARR[@]}"; do
       esac
       OUT="${SUITE_ROOT}/single_task/${bb}_${t}_${ex}_e${NUM_EXPERTS}_k${TOP_K}"
       echo "[single] backbone=$bb task=$t expert=$ex e=$NUM_EXPERTS k=$TOP_K out=$OUT"
+      RUN_INDEX=$((RUN_INDEX + 1))
+      LABEL="single/${bb}/${t}/${ex}/e${NUM_EXPERTS}/k${TOP_K}"
+      suite_progress_run_pipeline "single_task" "$RUN_INDEX" "$LABEL" "$OUT" \
       python scripts/pipeline_hpo_final_plot.py \
         --config "$CFG" \
         --out_dir "$OUT" \
@@ -93,6 +103,7 @@ for backbone in "${BACKBONE_ARR[@]}"; do
         --set "model.backbone=$bb" \
         --set "model.hf_pretrained_name=$HF_NAME" \
         --set "model.expert_type=$ex" \
+        --set "model.routing_mode=$ROUTING_MODE" \
         --set "model.num_experts=$NUM_EXPERTS" \
         --set "model.top_k=$TOP_K" \
         "${EXTRA_ARGS[@]}"

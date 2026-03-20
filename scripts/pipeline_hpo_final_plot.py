@@ -141,6 +141,47 @@ def _append_jsonl(path: Path, payload: Dict[str, Any]) -> None:
         f.write("\n")
 
 
+def _append_csv_row(path: Path, payload: Dict[str, Any], fieldnames: Sequence[str]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    need_header = (not path.exists()) or path.stat().st_size == 0
+    with path.open("a", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=list(fieldnames))
+        if need_header:
+            writer.writeheader()
+        writer.writerow({k: payload.get(k, "") for k in fieldnames})
+
+
+def _read_json(path: Path, default: Dict[str, Any] | None = None) -> Dict[str, Any]:
+    if not path.exists():
+        return {} if default is None else dict(default)
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {} if default is None else dict(default)
+    if isinstance(data, dict):
+        return data
+    return {} if default is None else dict(default)
+
+
+def _progress_bar(percent: float, width: int = 24) -> str:
+    pct = max(0.0, min(100.0, float(percent)))
+    filled = int(round((pct / 100.0) * width))
+    filled = max(0, min(width, filled))
+    return "[" + "#" * filled + "-" * (width - filled) + f"] {pct:6.2f}%"
+
+
+def _fmt_eta_short(sec: Any) -> str:
+    if sec is None:
+        return "n/a"
+    try:
+        rem = max(0, int(float(sec)))
+    except Exception:
+        return "n/a"
+    hh, rem = divmod(rem, 3600)
+    mm, ss = divmod(rem, 60)
+    return f"{hh:02d}:{mm:02d}:{ss:02d}"
+
+
 class ProgressTracker:
     def __init__(self, status_root: Path, *, notifier: "PipelineNotifier | None" = None) -> None:
         self._lock = threading.Lock()
@@ -149,6 +190,7 @@ class ProgressTracker:
         self.progress_path = status_root / "progress.json"
         self.events_path = status_root / "progress_events.jsonl"
         self.failures_path = status_root / "worker_failures.jsonl"
+        self.history_csv_path = status_root / "progress_history.csv"
         self._started_at = _ts_now()
         self._total_jobs = 0
         self._completed_jobs = 0
@@ -194,6 +236,50 @@ class ProgressTracker:
             },
         }
         _append_jsonl(self.events_path, evt)
+        _append_csv_row(
+            self.history_csv_path,
+            {
+                "ts_epoch": float(_ts_now()),
+                "event": str(event),
+                "phase": str(snap["current_phase"]),
+                "completed_jobs": int(snap["completed_jobs"]),
+                "total_jobs": int(snap["total_jobs"]),
+                "failed_jobs": int(snap["failed_jobs"]),
+                "percent": float(snap["percent"]),
+                "eta_sec": snap["eta_sec"],
+                "elapsed_sec": float(snap["elapsed_sec"]),
+            },
+            fieldnames=[
+                "ts_epoch",
+                "event",
+                "phase",
+                "completed_jobs",
+                "total_jobs",
+                "failed_jobs",
+                "percent",
+                "eta_sec",
+                "elapsed_sec",
+            ],
+        )
+        if event in {
+            "plan_add",
+            "phase_start",
+            "phase_end",
+            "job_done",
+            "job_failed",
+            "pipeline_done",
+            "pipeline_failed",
+        }:
+            print(
+                "[progress] "
+                f"{_progress_bar(float(snap['percent']))} "
+                f"phase={snap['current_phase'] or '-'} "
+                f"jobs={int(snap['completed_jobs'])}/{int(snap['total_jobs'])} "
+                f"failed={int(snap['failed_jobs'])} "
+                f"eta={_fmt_eta_short(snap['eta_sec'])} "
+                f"event={event}",
+                flush=True,
+            )
 
     def note(self, event: str, extra: Dict[str, Any]) -> None:
         with self._lock:
@@ -324,7 +410,86 @@ class PipelineNotifier:
     def notify(self, event: str, *, subject: str, lines: Sequence[str]) -> None:
         if not self.enabled_for(event):
             return
-        _send_mail_notification(self.emails, subject=subject, lines=list(lines), context=self.context)
+        merged = []
+        merged.extend(_notification_progress_lines(self.context))
+        merged.extend(_notification_suite_lines(self.context))
+        if merged:
+            merged.append("")
+        merged.extend(list(lines))
+        _send_mail_notification(self.emails, subject=subject, lines=merged, context=self.context)
+
+
+def _notification_progress_lines(context: Dict[str, Any]) -> List[str]:
+    status_root = str(context.get("status_root", "")).strip()
+    if not status_root:
+        return []
+    snap = _read_json(Path(status_root) / "progress.json")
+    if not snap:
+        return []
+    pct = float(snap.get("percent", 0.0) or 0.0)
+    phase = str(snap.get("current_phase", "") or "-")
+    done = int(snap.get("completed_jobs", 0) or 0)
+    total = int(snap.get("total_jobs", 0) or 0)
+    failed = int(snap.get("failed_jobs", 0) or 0)
+    eta = _fmt_eta_short(snap.get("eta_sec"))
+    lines = [
+        f"pipeline_progress={_progress_bar(pct)}",
+        f"pipeline_phase={phase}",
+        f"pipeline_jobs={done}/{total}",
+        f"pipeline_failed_jobs={failed}",
+        f"pipeline_eta={eta}",
+    ]
+    logs_root = str(context.get("logs_root", "")).strip()
+    if logs_root:
+        lines.append(f"gpu_logs_root={logs_root}")
+    return lines
+
+
+def _notification_suite_lines(context: Dict[str, Any]) -> List[str]:
+    suite_root = str(context.get("suite_progress_root", "")).strip()
+    if not suite_root:
+        return []
+    suite = _read_json(Path(suite_root) / "overall_status.json")
+    if not suite:
+        return []
+
+    out: List[str] = []
+    suite_meta = dict(suite.get("suite", {}))
+    out.append(f"suite_progress={suite_meta.get('bar', _progress_bar(0.0))}")
+    out.append(
+        "suite_runs="
+        f"{int(suite_meta.get('completed_runs', 0)) + int(suite_meta.get('failed_runs', 0))}/"
+        f"{int(suite_meta.get('total_runs', 0))}"
+    )
+    out.append(
+        "suite_done_failed="
+        f"{int(suite_meta.get('completed_runs', 0))}/{int(suite_meta.get('failed_runs', 0))}"
+    )
+    group_name = str(context.get("suite_group", "")).strip()
+    if not group_name:
+        return out
+
+    for row in suite.get("groups", []):
+        if str(row.get("group", "")) != group_name:
+            continue
+        out.append(f"suite_group={group_name}")
+        out.append(f"suite_group_progress={row.get('group_bar', _progress_bar(0.0))}")
+        out.append(
+            "suite_group_runs="
+            f"{int(row.get('completed_runs', 0)) + int(row.get('failed_runs', 0))}/"
+            f"{int(row.get('total_runs', 0))}"
+        )
+        label = str(row.get("current_label", "")).strip()
+        if label:
+            out.append(f"suite_group_label={label}")
+        phase = str(row.get("pipeline_phase", "")).strip()
+        if phase:
+            out.append(f"suite_group_pipeline_phase={phase}")
+        local_bar = str(row.get("pipeline_bar", "")).strip()
+        if local_bar:
+            out.append(f"suite_group_pipeline_progress={local_bar}")
+        break
+    return out
 
 
 def _send_mail_notification(
@@ -723,7 +888,7 @@ class MethodSpec:
     alias: str
     method_name: str
     fixed_overrides: Dict[str, str]
-    knobs: Tuple[KnobSpec, KnobSpec, KnobSpec]
+    knobs: Tuple[KnobSpec, ...]
 
 
 @dataclass
@@ -761,6 +926,8 @@ class RunResult:
 
 def _method_specs() -> Dict[str, MethodSpec]:
     lr_knob = KnobSpec("train.lr", "log", 2.0e-6, 5.0e-3, local_factor=2.0)
+    weight_decay_knob = KnobSpec("train.weight_decay", "linear", 0.0, 0.05, local_span=0.20)
+    grad_clip_knob = KnobSpec("train.grad_clip", "linear", 0.5, 2.0, local_span=0.20)
 
     return {
         "baseline": MethodSpec(
@@ -769,8 +936,8 @@ def _method_specs() -> Dict[str, MethodSpec]:
             fixed_overrides={},
             knobs=(
                 lr_knob,
-                KnobSpec("train.weight_decay", "linear", 0.0, 0.05, local_span=0.20),
-                KnobSpec("train.grad_clip", "linear", 0.5, 2.0, local_span=0.20),
+                weight_decay_knob,
+                grad_clip_knob,
             ),
         ),
         "cagrad": MethodSpec(
@@ -779,6 +946,8 @@ def _method_specs() -> Dict[str, MethodSpec]:
             fixed_overrides={},
             knobs=(
                 lr_knob,
+                weight_decay_knob,
+                grad_clip_knob,
                 KnobSpec("method.baseline_cagrad.c", "linear", 0.1, 1.0, local_span=0.20),
                 KnobSpec("method.baseline_cagrad.inner_lr", "log", 1.0e-2, 5.0e-1, local_factor=2.0),
             ),
@@ -789,8 +958,9 @@ def _method_specs() -> Dict[str, MethodSpec]:
             fixed_overrides={"method.ours.use_load_norm": "true"},
             knobs=(
                 lr_knob,
+                weight_decay_knob,
+                grad_clip_knob,
                 KnobSpec("method.ours.lambda_align", "log", 1.0e-5, 3.0e-2, local_factor=2.0),
-                KnobSpec("method.ours.eps", "log", 1.0e-9, 1.0e-6, local_factor=3.0),
             ),
         ),
         "ablation": MethodSpec(
@@ -799,8 +969,9 @@ def _method_specs() -> Dict[str, MethodSpec]:
             fixed_overrides={"method.ours.use_load_norm": "false"},
             knobs=(
                 lr_knob,
+                weight_decay_knob,
+                grad_clip_knob,
                 KnobSpec("method.ours.lambda_align", "log", 1.0e-5, 3.0e-2, local_factor=2.0),
-                KnobSpec("method.ours.eps", "log", 1.0e-9, 1.0e-6, local_factor=3.0),
             ),
         ),
     }
@@ -1602,14 +1773,14 @@ def main() -> None:
     p.add_argument("--probe_timeout_sec", type=float, default=600.0)
     p.add_argument("--disable_mem_probe", action="store_true")
     p.add_argument("--max_workers_per_gpu", type=int, default=4, help="0 means no explicit cap")
-    p.add_argument("--max_failed_jobs", type=int, default=3, help="stop the whole pipeline after this many final job failures")
+    p.add_argument("--max_failed_jobs", type=int, default=3, help="stop the whole pipeline after this many job failures")
     p.add_argument("--notify_emails", type=str, default=os.environ.get("PIPELINE_NOTIFY_EMAILS", ""))
     p.add_argument(
         "--notify_events",
         type=str,
         default=os.environ.get(
             "PIPELINE_NOTIFY_EVENTS",
-            "pipeline_done,pipeline_failed,failure_limit_reached",
+            "phase_start,phase_end,job_failed,pipeline_done,pipeline_failed,failure_limit_reached",
         ),
     )
     p.add_argument("--skip_mvp", action="store_true")
@@ -1680,6 +1851,11 @@ def main() -> None:
             "out_dir": str(out_dir),
             "config": str(args.config),
             "gpus": ",".join(str(x) for x in gpus),
+            "status_root": str(status_root),
+            "logs_root": str(logs_root),
+            "suite_progress_root": str(os.environ.get("PIPELINE_SUITE_PROGRESS_ROOT", "")).strip(),
+            "suite_group": str(os.environ.get("PIPELINE_SUITE_GROUP", "")).strip(),
+            "suite_label": str(os.environ.get("PIPELINE_SUITE_LABEL", "")).strip(),
         },
     )
     progress = ProgressTracker(status_root, notifier=notifier)
@@ -1700,6 +1876,8 @@ def main() -> None:
 
     all_best_cfg: Dict[str, Dict[str, Any]] = {}
     global_hpo_rows: List[Dict[str, Any]] = []
+    pipeline_lock_cm = _file_lock(locks_root / "pipeline.lock", tracker=progress, label="pipeline")
+    pipeline_lock_cm.__enter__()
 
     try:
         for mi, spec in enumerate(specs):
@@ -2102,6 +2280,7 @@ def main() -> None:
                 "hpo_best": str(hpo_root / "best_configs.json"),
                 "final_agg": str(final_root / "final_agg.csv"),
                 "progress_file": str(status_root / "progress.json"),
+                "progress_csv": str(status_root / "progress_history.csv"),
                 "gpu_logs_root": str(logs_root),
                 "failure_log": str(status_root / "worker_failures.jsonl"),
                 "probe_cache": str(probe_cache_path),
@@ -2116,6 +2295,7 @@ def main() -> None:
                 f"hpo_best={hpo_root / 'best_configs.json'}",
                 f"final_agg={final_root / 'final_agg.csv'}",
                 f"progress_file={status_root / 'progress.json'}",
+                f"progress_csv={status_root / 'progress_history.csv'}",
                 f"failure_log={status_root / 'worker_failures.jsonl'}",
                 f"plotters_failed={plotter_error}",
             ],
@@ -2143,6 +2323,8 @@ def main() -> None:
             ],
         )
         raise
+    finally:
+        pipeline_lock_cm.__exit__(None, None, None)
 
     print(f"\n[pipeline done] out_dir={out_dir}")
     print(f"[hpo best] {(hpo_root / 'best_configs.json')}")
