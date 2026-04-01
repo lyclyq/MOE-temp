@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+
+GPUS="${GPUS:-0,1}"
+SUITE_ROOT="${SUITE_ROOT:-runs/paper_suite_smoke_min}"
+
+GPUS="$GPUS" \
+SUITE_ROOT="$SUITE_ROOT" \
+HPO_SEEDS="${HPO_SEEDS:-1}" \
+FINAL_SEEDS="${FINAL_SEEDS:-1}" \
+HPO_TRIALS="${HPO_TRIALS:-1}" \
+HPO_STEPS="${HPO_STEPS:-1}" \
+FINAL_STEPS="${FINAL_STEPS:-1}" \
+HPO_STEPS_SINGLE="${HPO_STEPS_SINGLE:-1}" \
+HPO_STEPS_MULTI="${HPO_STEPS_MULTI:-1}" \
+EVAL_EVERY="${EVAL_EVERY:-1}" \
+LOCAL_TOPK="${LOCAL_TOPK:-1}" \
+LOCAL_GRID_POINTS="${LOCAL_GRID_POINTS:-1}" \
+SKIP_MVP="${SKIP_MVP:-1}" \
+BACKBONE="${BACKBONE:-deberta}" \
+RANKS="${RANKS:-16}" \
+EXPERT_TYPES="${EXPERT_TYPES:-lora,ffn}" \
+EXPERT_SETTINGS="${EXPERT_SETTINGS:-4:2}" \
+TEXTCLS_TRAIN_SIZE="${TEXTCLS_TRAIN_SIZE:-64}" \
+TEXTCLS_VAL_SIZE="${TEXTCLS_VAL_SIZE:-32}" \
+bash scripts/run_appendix_experiment_suite_gpu01.sh

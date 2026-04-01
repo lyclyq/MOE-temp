@@ -1,0 +1,126 @@
+[run] method=cagrad candidate=coord_03_train_grad_clip_010 seed=3 steps=200 gpu=0
+[run] cmd=
+/home/zhujjing/anaconda3/envs/moe/bin/python /home/zhujjing/MOE-grad-conflict-routing/scripts/run.py --config configs/multitask_glue3_rte_mrpc_cola_real.yaml --set model.backbone_backend=hf --set model.hf_load_pretrained=true --set model.hf_local_files_only=true --set model.backbone=gpt2 --set model.hf_pretrained_name=gpt2-medium --set model.expert_type=lora --set model.routing_mode=topk --set model.num_experts=4 --set model.top_k=2 --set train.eval_train_fraction=0.10 --set train.eval_train_max_batches=-1 --set train.eval_max_batches=-1 --set seed=3 --set method.name=baseline_cagrad --set train.steps=200 --set train.eval_every_steps=100 --set method.baseline_cagrad.c=0.4 --set method.baseline_cagrad.inner_lr=0.1 --set train.grad_clip=1.273448831 --set train.lr=2e-05 --set train.weight_decay=0.003745151078 --out /home/zhujjing/MOE-grad-conflict-routing/runs/paper_suite/single_gpu/multi_task/glue3_gpt2_lora_e4_k2/hpo/cagrad/trial_runs/coord_03_train_grad_clip_010/cagrad_s3.json --curve_out /home/zhujjing/MOE-grad-conflict-routing/runs/paper_suite/single_gpu/multi_task/glue3_gpt2_lora_e4_k2/hpo/cagrad/trial_runs/coord_03_train_grad_clip_010/cagrad_s3_curve.csv
+Using the latest cached version of the dataset since glue couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'rte' at /home/zhujjing/hf_cache/datasets/glue/rte/0.0.0/bcdcba79d07bc864c1c254ccfcedcce55bcc9a8c (last modified on Thu Mar 19 15:00:36 2026).
+/home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/transformers/utils/hub.py:124: FutureWarning: Using `TRANSFORMERS_CACHE` is deprecated and will be removed in v5 of Transformers. Use `HF_HOME` instead.
+  warnings.warn(
+Using the latest cached version of the dataset since glue couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'mrpc' at /home/zhujjing/hf_cache/datasets/glue/mrpc/0.0.0/bcdcba79d07bc864c1c254ccfcedcce55bcc9a8c (last modified on Thu Mar 19 15:01:06 2026).
+Using the latest cached version of the dataset since glue couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'cola' at /home/zhujjing/hf_cache/datasets/glue/cola/0.0.0/bcdcba79d07bc864c1c254ccfcedcce55bcc9a8c (last modified on Thu Mar 19 15:02:09 2026).
+/home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/transformers/pytorch_utils.py:104: UserWarning: gemm_and_bias error: CUBLAS_STATUS_INTERNAL_ERROR when calling cublasLtMatmul with transpose_mat1 0 transpose_mat2 0 m 3072 n 512 k 1024 mat1_ld 3072 mat2_ld 1024 result_ld 3072 abType 0 cType 0 computeType 68 scaleType 0. Will attempt to recover by calling unfused cublas path. (Triggered internally at /pytorch/aten/src/ATen/cuda/CUDABlas.cpp:1765.)
+  x = torch.addmm(self.bias, x.view(-1, x.size(-1)), self.weight)
+[step 0001/200] method=baseline_cagrad loss=0.6603 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0010/200] method=baseline_cagrad loss=0.4934 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0020/200] method=baseline_cagrad loss=0.5728 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0030/200] method=baseline_cagrad loss=0.6088 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0040/200] method=baseline_cagrad loss=0.6796 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0050/200] method=baseline_cagrad loss=0.5953 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0060/200] method=baseline_cagrad loss=0.6295 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0070/200] method=baseline_cagrad loss=0.6348 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0080/200] method=baseline_cagrad loss=0.7807 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0090/200] method=baseline_cagrad loss=0.5079 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0100/200] method=baseline_cagrad loss=0.5853 train_acc=0.6636 train_loss=0.6257 val_acc=0.6355 val_loss=0.6454 router_H=0.1759 best=0.6355
+           router_load=[0.9234002232551575, 0.05388419330120087, 0.010846029967069626, 0.011869541369378567]
+[step 0110/200] method=baseline_cagrad loss=0.5506 train_acc=0.6636 train_loss=0.6257 val_acc=0.6355 val_loss=0.6454 router_H=0.1759 best=0.6355
+           router_load=[0.9234002232551575, 0.05388419330120087, 0.010846029967069626, 0.011869541369378567]
+[step 0120/200] method=baseline_cagrad loss=0.6165 train_acc=0.6636 train_loss=0.6257 val_acc=0.6355 val_loss=0.6454 router_H=0.1759 best=0.6355
+           router_load=[0.9234002232551575, 0.05388419330120087, 0.010846029967069626, 0.011869541369378567]
+[step 0130/200] method=baseline_cagrad loss=0.5380 train_acc=0.6636 train_loss=0.6257 val_acc=0.6355 val_loss=0.6454 router_H=0.1759 best=0.6355
+           router_load=[0.9234002232551575, 0.05388419330120087, 0.010846029967069626, 0.011869541369378567]
+[step 0140/200] method=baseline_cagrad loss=0.6733 train_acc=0.6636 train_loss=0.6257 val_acc=0.6355 val_loss=0.6454 router_H=0.1759 best=0.6355
+           router_load=[0.9234002232551575, 0.05388419330120087, 0.010846029967069626, 0.011869541369378567]
+[step 0150/200] method=baseline_cagrad loss=0.4883 train_acc=0.6636 train_loss=0.6257 val_acc=0.6355 val_loss=0.6454 router_H=0.1759 best=0.6355
+           router_load=[0.9234002232551575, 0.05388419330120087, 0.010846029967069626, 0.011869541369378567]
+[step 0160/200] method=baseline_cagrad loss=0.6157 train_acc=0.6636 train_loss=0.6257 val_acc=0.6355 val_loss=0.6454 router_H=0.1759 best=0.6355
+           router_load=[0.9234002232551575, 0.05388419330120087, 0.010846029967069626, 0.011869541369378567]
+[step 0170/200] method=baseline_cagrad loss=0.7345 train_acc=0.6636 train_loss=0.6257 val_acc=0.6355 val_loss=0.6454 router_H=0.1759 best=0.6355
+           router_load=[0.9234002232551575, 0.05388419330120087, 0.010846029967069626, 0.011869541369378567]
+[step 0180/200] method=baseline_cagrad loss=0.6883 train_acc=0.6636 train_loss=0.6257 val_acc=0.6355 val_loss=0.6454 router_H=0.1759 best=0.6355
+           router_load=[0.9234002232551575, 0.05388419330120087, 0.010846029967069626, 0.011869541369378567]
+[step 0190/200] method=baseline_cagrad loss=0.6883 train_acc=0.6636 train_loss=0.6257 val_acc=0.6355 val_loss=0.6454 router_H=0.1759 best=0.6355
+           router_load=[0.9234002232551575, 0.05388419330120087, 0.010846029967069626, 0.011869541369378567]
+Traceback (most recent call last):
+  File "/home/zhujjing/MOE-grad-conflict-routing/scripts/run.py", line 104, in <module>
+    main()
+  File "/home/zhujjing/MOE-grad-conflict-routing/scripts/run.py", line 68, in main
+    summary = train(cfg, data, model)
+  File "/home/zhujjing/MOE-grad-conflict-routing/src/moe_gc/trainer.py", line 968, in train
+    tr_m = _evaluate_metrics(
+  File "/home/zhujjing/MOE-grad-conflict-routing/src/moe_gc/trainer.py", line 499, in _evaluate_metrics
+    model_out = model(
+  File "/home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/zhujjing/MOE-grad-conflict-routing/src/moe_gc/model.py", line 352, in forward
+    h = self.backbone(input_ids=input_ids, attention_mask=attention_mask)
+  File "/home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/zhujjing/MOE-grad-conflict-routing/src/moe_gc/model.py", line 220, in forward
+    out = self.model(input_ids=input_ids, attention_mask=attention_mask)
+  File "/home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/transformers/models/gpt2/modeling_gpt2.py", line 1116, in forward
+    outputs = block(
+  File "/home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/transformers/models/gpt2/modeling_gpt2.py", line 614, in forward
+    attn_outputs = self.attn(
+  File "/home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/transformers/models/gpt2/modeling_gpt2.py", line 325, in forward
+    query, key, value = self.c_attn(hidden_states).split(self.split_size, dim=2)
+  File "/home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/transformers/pytorch_utils.py", line 104, in forward
+    x = torch.addmm(self.bias, x.view(-1, x.size(-1)), self.weight)
+torch.AcceleratorError: CUDA error: device-side assert triggered
+Search for `cudaErrorAssert' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+terminate called after throwing an instance of 'c10::AcceleratorError'
+  what():  CUDA error: device-side assert triggered
+Search for `cudaErrorAssert' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+Exception raised from currentStreamCaptureStatusMayInitCtx at /pytorch/c10/cuda/CUDAGraphsC10Utils.h:71 (most recent call first):
+frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x9d (0x7a6f8d172fdd in /home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/torch/lib/libc10.so)
+frame #1: <unknown function> + 0xc0e0 (0x7a6f8d50c0e0 in /home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/torch/lib/libc10_cuda.so)
+frame #2: <unknown function> + 0xf2a97a (0x7a6e6e52a97a in /home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
+frame #3: <unknown function> + 0x7e9d4 (0x7a6f8d1549d4 in /home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/torch/lib/libc10.so)
+frame #4: c10::TensorImpl::~TensorImpl() + 0x9 (0x7a6f8d14e369 in /home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/torch/lib/libc10.so)
+frame #5: <unknown function> + 0x84c75d (0x7a6ec0c4c75d in /home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/torch/lib/libtorch_python.so)
+frame #6: <unknown function> + 0x84c7f1 (0x7a6ec0c4c7f1 in /home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/torch/lib/libtorch_python.so)
+frame #7: <unknown function> + 0x14ed6e (0x5fa35a003d6e in /home/zhujjing/anaconda3/envs/moe/bin/python)
+frame #8: <unknown function> + 0x129587 (0x5fa359fde587 in /home/zhujjing/anaconda3/envs/moe/bin/python)
+frame #9: <unknown function> + 0x135a27 (0x5fa359feaa27 in /home/zhujjing/anaconda3/envs/moe/bin/python)
+frame #10: <unknown function> + 0x147e66 (0x5fa359ffce66 in /home/zhujjing/anaconda3/envs/moe/bin/python)
+frame #11: <unknown function> + 0x147ea1 (0x5fa359ffcea1 in /home/zhujjing/anaconda3/envs/moe/bin/python)
+frame #12: <unknown function> + 0x147ea1 (0x5fa359ffcea1 in /home/zhujjing/anaconda3/envs/moe/bin/python)
+frame #13: <unknown function> + 0x147ea1 (0x5fa359ffcea1 in /home/zhujjing/anaconda3/envs/moe/bin/python)
+frame #14: <unknown function> + 0x11e5b7 (0x5fa359fd35b7 in /home/zhujjing/anaconda3/envs/moe/bin/python)
+frame #15: PyDict_SetItemString + 0x4f (0x5fa359fd694f in /home/zhujjing/anaconda3/envs/moe/bin/python)
+frame #16: <unknown function> + 0x2072b4 (0x5fa35a0bc2b4 in /home/zhujjing/anaconda3/envs/moe/bin/python)
+frame #17: Py_FinalizeEx + 0x150 (0x5fa35a0bb500 in /home/zhujjing/anaconda3/envs/moe/bin/python)
+frame #18: <unknown function> + 0x93fdc (0x5fa359f48fdc in /home/zhujjing/anaconda3/envs/moe/bin/python)
+frame #19: Py_BytesMain + 0x37 (0x5fa35a07d947 in /home/zhujjing/anaconda3/envs/moe/bin/python)
+frame #20: <unknown function> + 0x2a575 (0x7a6f8ea2a575 in /lib/x86_64-linux-gnu/libc.so.6)
+frame #21: __libc_start_main + 0x88 (0x7a6f8ea2a628 in /lib/x86_64-linux-gnu/libc.so.6)
+frame #22: <unknown function> + 0x1c882e (0x5fa35a07d82e in /home/zhujjing/anaconda3/envs/moe/bin/python)
+

@@ -1,0 +1,10 @@
+[Unit]
+Description=Sync remote MOE experiment results into runs_server/server2
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/yuli0398/Optimization/MOE-grad-conflict-routing
+EnvironmentFile=-%h/.config/moe-server2-results-sync.env
+ExecStart=/usr/bin/env python3 /home/yuli0398/Optimization/MOE-grad-conflict-routing/scripts/sync_remote_experiment_results.py --host ${MOE_SERVER2_REMOTE_HOST} --port ${MOE_SERVER2_REMOTE_PORT} --user ${MOE_SERVER2_REMOTE_USER} --password ${MOE_SERVER2_REMOTE_PASSWORD} --remote-base ${MOE_SERVER2_REMOTE_BASE} --local-base ${MOE_SERVER2_LOCAL_BASE} --paths ${MOE_SERVER2_REL_PATHS}

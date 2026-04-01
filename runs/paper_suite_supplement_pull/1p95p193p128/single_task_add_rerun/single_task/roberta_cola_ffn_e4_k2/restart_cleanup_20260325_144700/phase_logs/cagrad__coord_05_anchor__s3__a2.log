@@ -1,0 +1,51 @@
+[run] method=cagrad candidate=coord_05_anchor seed=3 steps=200 gpu=0
+[run] cmd=
+/root/miniconda3/envs/optimization/bin/python /root/Optimization/MOE-grad-conflict-routing/scripts/run.py --config configs/singletask_cola_real.yaml --set model.backbone_backend=hf --set model.hf_load_pretrained=true --set model.backbone=roberta --set model.hf_pretrained_name=roberta-base --set model.expert_type=ffn --set model.routing_mode=topk --set model.num_experts=4 --set model.top_k=2 --set seed=3 --set method.name=baseline_cagrad --set train.steps=200 --set train.eval_every_steps=50 --set method.baseline_cagrad.c=0.9288277249 --set method.baseline_cagrad.inner_lr=0.1 --set train.grad_clip=1.273448831 --set train.lr=9.799696332e-06 --set train.weight_decay=0.005634744023 --out /root/Optimization/MOE-grad-conflict-routing/runs/paper_suite_supplement/single_task_add_rerun/single_task/roberta_cola_ffn_e4_k2/hpo/cagrad/trial_runs/coord_05_anchor/cagrad_s3.json --curve_out /root/Optimization/MOE-grad-conflict-routing/runs/paper_suite_supplement/single_task_add_rerun/single_task/roberta_cola_ffn_e4_k2/hpo/cagrad/trial_runs/coord_05_anchor/cagrad_s3_curve.csv
+'[Errno 101] Network is unreachable' thrown while requesting HEAD https://huggingface.co/datasets/glue/resolve/bcdcba79d07bc864c1c254ccfcedcce55bcc9a8c/glue.py
+Retrying in 1s [Retry 1/5].
+Using the latest cached version of the dataset since glue couldn't be found on the Hugging Face Hub
+Found the latest cached dataset configuration 'cola' at /root/.cache/huggingface/datasets/glue/cola/0.0.0/bcdcba79d07bc864c1c254ccfcedcce55bcc9a8c (last modified on Mon Mar 23 09:28:48 2026).
+'[Errno 101] Network is unreachable' thrown while requesting HEAD https://huggingface.co/roberta-base/resolve/main/adapter_config.json
+Retrying in 1s [Retry 1/5].
+Traceback (most recent call last):
+  File "/root/Optimization/MOE-grad-conflict-routing/scripts/run.py", line 104, in <module>
+    main()
+  File "/root/Optimization/MOE-grad-conflict-routing/scripts/run.py", line 66, in main
+    model = MoEClassifier(cfg["model"])
+  File "/root/Optimization/MOE-grad-conflict-routing/src/moe_gc/model.py", line 285, in __init__
+    self.backbone = HFBackbone(
+  File "/root/Optimization/MOE-grad-conflict-routing/src/moe_gc/model.py", line 158, in __init__
+    self.model = AutoModel.from_pretrained(chosen_name, local_files_only=bool(local_files_only))
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/transformers/models/auto/auto_factory.py", line 296, in from_pretrained
+    maybe_adapter_path = find_adapter_config_file(
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/transformers/utils/peft_utils.py", line 84, in find_adapter_config_file
+    adapter_cached_filename = cached_file(
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/transformers/utils/hub.py", line 277, in cached_file
+    file = cached_files(path_or_repo_id=path_or_repo_id, filenames=[filename], **kwargs)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/transformers/utils/hub.py", line 508, in cached_files
+    raise e
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/transformers/utils/hub.py", line 420, in cached_files
+    hf_hub_download(
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/huggingface_hub/utils/_validators.py", line 89, in _inner_fn
+    return fn(*args, **kwargs)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/huggingface_hub/file_download.py", line 986, in hf_hub_download
+    return _hf_hub_download_to_cache_dir(
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/huggingface_hub/file_download.py", line 1119, in _hf_hub_download_to_cache_dir
+    _get_metadata_or_catch_error(
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/huggingface_hub/file_download.py", line 1653, in _get_metadata_or_catch_error
+    metadata = get_hf_file_metadata(
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/huggingface_hub/utils/_validators.py", line 89, in _inner_fn
+    return fn(*args, **kwargs)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/huggingface_hub/file_download.py", line 1576, in get_hf_file_metadata
+    response = _httpx_follow_relative_redirects_with_backoff(
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/huggingface_hub/utils/_http.py", line 685, in _httpx_follow_relative_redirects_with_backoff
+    response = http_backoff(
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/huggingface_hub/utils/_http.py", line 559, in http_backoff
+    return next(
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/huggingface_hub/utils/_http.py", line 467, in _http_backoff_base
+    response = client.request(method=method, url=url, **kwargs)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/httpx/_client.py", line 825, in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/httpx/_client.py", line 901, in send
+    raise RuntimeError("Cannot send a request, as the client has been closed.")
+RuntimeError: Cannot send a request, as the client has been closed.

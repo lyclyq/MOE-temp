@@ -1,0 +1,104 @@
+[prepare] downloading models + local textcls datasets
+Loading weights:   0%|          | 0/197 [00:00<?, ?it/s]Loading weights: 100%|██████████| 197/197 [00:00<00:00, 7982.36it/s]
+[1mRobertaModel LOAD REPORT[0m from: roberta-base
+Key                             | Status     | 
+--------------------------------+------------+-
+lm_head.dense.weight            | UNEXPECTED | 
+roberta.embeddings.position_ids | UNEXPECTED | 
+lm_head.layer_norm.bias         | UNEXPECTED | 
+lm_head.bias                    | UNEXPECTED | 
+lm_head.layer_norm.weight       | UNEXPECTED | 
+lm_head.dense.bias              | UNEXPECTED | 
+pooler.dense.bias               | MISSING    | 
+pooler.dense.weight             | MISSING    | 
+
+[3mNotes:
+- UNEXPECTED[3m	:can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+- MISSING[3m	:those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.[0m
+[model-ok] roberta-base
+Loading weights:   0%|          | 0/198 [00:00<?, ?it/s]Loading weights: 100%|██████████| 198/198 [00:00<00:00, 9894.82it/s]
+[1mDebertaV2Model LOAD REPORT[0m from: microsoft/deberta-v3-base
+Key                                     | Status     |  | 
+----------------------------------------+------------+--+-
+lm_predictions.lm_head.bias             | UNEXPECTED |  | 
+lm_predictions.lm_head.dense.weight     | UNEXPECTED |  | 
+mask_predictions.dense.weight           | UNEXPECTED |  | 
+lm_predictions.lm_head.dense.bias       | UNEXPECTED |  | 
+mask_predictions.LayerNorm.bias         | UNEXPECTED |  | 
+mask_predictions.LayerNorm.weight       | UNEXPECTED |  | 
+mask_predictions.classifier.weight      | UNEXPECTED |  | 
+mask_predictions.classifier.bias        | UNEXPECTED |  | 
+lm_predictions.lm_head.LayerNorm.bias   | UNEXPECTED |  | 
+mask_predictions.dense.bias             | UNEXPECTED |  | 
+lm_predictions.lm_head.LayerNorm.weight | UNEXPECTED |  | 
+
+[3mNotes:
+- UNEXPECTED[3m	:can be ignored when loading from different task/architecture; not ok if you expect identical arch.[0m
+[model-ok] microsoft/deberta-v3-base
+Loading weights:   0%|          | 0/292 [00:00<?, ?it/s]Loading weights: 100%|██████████| 292/292 [00:00<00:00, 21568.34it/s]
+[prepare] downloading glue/sst2 via mirror
+Saving the dataset (0/1 shards):   0%|          | 0/20000 [00:00<?, ? examples/s]Saving the dataset (1/1 shards): 100%|██████████| 20000/20000 [00:00<00:00, 1315839.44 examples/s]Saving the dataset (1/1 shards): 100%|██████████| 20000/20000 [00:00<00:00, 1288810.23 examples/s]
+Saving the dataset (0/1 shards):   0%|          | 0/872 [00:00<?, ? examples/s]Saving the dataset (1/1 shards): 100%|██████████| 872/872 [00:00<00:00, 236880.38 examples/s]Saving the dataset (1/1 shards): 100%|██████████| 872/872 [00:00<00:00, 225128.22 examples/s]
+/root/Optimization/MOE-grad-conflict-routing-appendix2/local_datasets/textcls/glue_sst2
+[prepare] downloading yelp_polarity via mirror
+Traceback (most recent call last):
+  File "/root/Optimization/MOE-grad-conflict-routing-appendix2/scripts/prepare_appendix2_local_textcls.py", line 91, in <module>
+    main()
+  File "/root/Optimization/MOE-grad-conflict-routing-appendix2/scripts/prepare_appendix2_local_textcls.py", line 85, in main
+    ds = load_dataset(dataset_name, subset) if subset is not None else load_dataset(dataset_name)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/datasets/load.py", line 1720, in load_dataset
+    ds = builder_instance.as_dataset(split=split, verification_mode=verification_mode, in_memory=keep_in_memory)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/datasets/builder.py", line 1052, in as_dataset
+    datasets = map_nested(
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/datasets/utils/py_utils.py", line 519, in map_nested
+    mapped = [
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/datasets/utils/py_utils.py", line 520, in <listcomp>
+    _single_map_nested((function, obj, batched, batch_size, types, None, True, None))
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/datasets/utils/py_utils.py", line 381, in _single_map_nested
+    return function(data_struct)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/datasets/builder.py", line 1082, in _build_single_dataset
+    ds = self._as_dataset(
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/datasets/builder.py", line 1156, in _as_dataset
+    dataset_kwargs = ArrowReader(cache_dir, self.info).read(
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/datasets/arrow_reader.py", line 252, in read
+    return self.read_files(files=files, original_instructions=instructions, in_memory=in_memory)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/datasets/arrow_reader.py", line 273, in read_files
+    pa_table = self._read_files(files, in_memory=in_memory)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/datasets/arrow_reader.py", line 202, in _read_files
+    pa_tables = thread_map(
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/tqdm/contrib/concurrent.py", line 69, in thread_map
+    return _executor_map(ThreadPoolExecutor, fn, *iterables, **tqdm_kwargs)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/tqdm/contrib/concurrent.py", line 51, in _executor_map
+    return list(tqdm_class(ex.map(fn, *iterables, chunksize=chunksize), **kwargs))
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/tqdm/std.py", line 1169, in __iter__
+    for obj in iterable:
+  File "/root/miniconda3/envs/optimization/lib/python3.10/concurrent/futures/_base.py", line 621, in result_iterator
+    yield _result_or_cancel(fs.pop())
+  File "/root/miniconda3/envs/optimization/lib/python3.10/concurrent/futures/_base.py", line 319, in _result_or_cancel
+    return fut.result(timeout)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/concurrent/futures/_base.py", line 458, in result
+    return self.__get_result()
+  File "/root/miniconda3/envs/optimization/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/root/miniconda3/envs/optimization/lib/python3.10/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/datasets/arrow_reader.py", line 308, in _get_table_from_filename
+    table = ArrowReader.read_table(filename, in_memory=in_memory)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/datasets/arrow_reader.py", line 329, in read_table
+    return table_cls.from_file(filename)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/datasets/table.py", line 1017, in from_file
+    table = _memory_mapped_arrow_table_from_file(filename)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/datasets/table.py", line 64, in _memory_mapped_arrow_table_from_file
+    pa_table = opened_stream.read_all()
+  File "pyarrow/ipc.pxi", line 848, in pyarrow.lib.RecordBatchReader.read_all
+  File "pyarrow/error.pxi", line 92, in pyarrow.lib.check_status
+OSError: Expected to be able to read 700824 bytes for message body, got 564856
+[model-ok] gpt2-medium
+Traceback (most recent call last):
+  File "/root/Optimization/MOE-grad-conflict-routing-appendix2/scripts/prepare_appendix_offline_assets.py", line 58, in <module>
+    main()
+  File "/root/Optimization/MOE-grad-conflict-routing-appendix2/scripts/prepare_appendix_offline_assets.py", line 54, in main
+    subprocess.run(prep_cmd, cwd=str(ROOT), check=True)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/root/miniconda3/envs/optimization/bin/python', '/root/Optimization/MOE-grad-conflict-routing-appendix2/scripts/prepare_appendix2_local_textcls.py', '--out_root', 'local_datasets/textcls', '--train_size', '20000', '--val_size', '4000', '--datasets', 'glue_sst2,yelp_polarity,amazon_polarity,imdb']' returned non-zero exit status 1.

@@ -1,0 +1,10 @@
+[Unit]
+Description=Sync appendix tmux status JSON from the appendix server
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/yuli0398/Optimization/MOE-grad-conflict-routing
+EnvironmentFile=-%h/.config/moe-appendix-status-sync.env
+ExecStart=/usr/bin/env python3 /home/yuli0398/Optimization/MOE-grad-conflict-routing/scripts/sync_remote_experiment_status_json.py --host ${MOE_STATUS_REMOTE_HOST} --port ${MOE_STATUS_REMOTE_PORT} --user ${MOE_STATUS_REMOTE_USER} --password ${MOE_STATUS_REMOTE_PASSWORD} --remote-root ${MOE_STATUS_REMOTE_ROOT} --suite-root ${MOE_STATUS_SUITE_ROOT} --remote-output ${MOE_STATUS_REMOTE_JSON} --local-output ${MOE_STATUS_LOCAL_JSON} --sessions ${MOE_STATUS_SESSIONS}

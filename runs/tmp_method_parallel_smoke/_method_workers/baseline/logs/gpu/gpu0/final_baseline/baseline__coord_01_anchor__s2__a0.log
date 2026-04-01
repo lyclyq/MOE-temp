@@ -1,0 +1,14 @@
+[run] method=baseline candidate=coord_01_anchor seed=2 steps=3 gpu=0
+[run] cmd=
+/home/yuli0398/miniconda3/envs/optimization/bin/python /share/home/yuli0398/Optimization/MOE-grad-conflict-routing/scripts/run.py --config configs/base.yaml --set model.backbone_backend=tiny --set model.hf_load_pretrained=false --set train.batch_size=8 --set train.micro_batch_size=4 --set train.log_every=1 --set data.train_size=128 --set data.val_size=64 --set seed=2 --set method.name=baseline_avg --set train.steps=3 --set train.eval_every_steps=2 --set train.grad_clip=1 --set train.lr=0.001 --set train.weight_decay=0 --out /share/home/yuli0398/Optimization/MOE-grad-conflict-routing/runs/tmp_method_parallel_smoke/_method_workers/baseline/final/baseline_s2.json --curve_out /share/home/yuli0398/Optimization/MOE-grad-conflict-routing/runs/tmp_method_parallel_smoke/_method_workers/baseline/final/baseline_s2_curve.csv
+/home/yuli0398/miniconda3/envs/optimization/lib/python3.10/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+/home/yuli0398/miniconda3/envs/optimization/lib/python3.10/site-packages/torch/nn/modules/transformer.py:379: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  warnings.warn(
+[step 0001/3] method=baseline_avg loss=1.0887 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0002/3] method=baseline_avg loss=2.4383 train_acc=0.3333 train_loss=2.1968 val_acc=0.3698 val_loss=2.2472 router_H=1.2337 best=0.3698
+           router_load=[0.2173488736152649, 0.4958745539188385, 0.1296255737543106, 0.1571510285139084]
+[step 0003/3] method=baseline_avg loss=2.0146 train_acc=0.3125 train_loss=1.1267 val_acc=0.3698 val_loss=1.1710 router_H=1.3265 best=0.3698
+           router_load=[0.23853351175785065, 0.3942831754684448, 0.1600869745016098, 0.20709635317325592]
+saved summary -> /share/home/yuli0398/Optimization/MOE-grad-conflict-routing/runs/tmp_method_parallel_smoke/_method_workers/baseline/final/baseline_s2.json
+saved curve -> /share/home/yuli0398/Optimization/MOE-grad-conflict-routing/runs/tmp_method_parallel_smoke/_method_workers/baseline/final/baseline_s2_curve.csv

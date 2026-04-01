@@ -1,0 +1,10 @@
+[probe] phase=baseline:coord:train.lr gpu=1
+[probe] cmd=
+/home/yuli0398/miniconda3/envs/optimization/bin/python /share/home/yuli0398/Optimization/MOE-grad-conflict-routing/scripts/run.py --config configs/multitask_glue3_rte_mrpc_cola_real.yaml --set model.backbone_backend=hf --set model.hf_load_pretrained=true --set model.backbone=gpt2 --set model.hf_pretrained_name=gpt2-medium --set model.expert_type=lora --set model.num_experts=4 --set model.top_k=2 --set seed=1 --set method.name=baseline_avg --set train.steps=2 --set train.eval_every_steps=0 --set train.grad_clip=1 --set train.lr=2e-05 --set train.weight_decay=0.01 --out /tmp/moe_probe_oa6losqg/probe_summary.json --curve_out /tmp/moe_probe_oa6losqg/probe_curve.csv
+/home/yuli0398/miniconda3/envs/optimization/lib/python3.10/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+[step 0001/2] method=baseline_avg loss=1.5920 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0002/2] method=baseline_avg loss=3.4152 train_acc=0.6208 train_loss=2.0631 val_acc=0.6041 val_loss=2.1643 router_H=0.3759 best=0.6041
+           router_load=[0.8765136003494263, 0.04149482771754265, 0.06271245330572128, 0.01927853934466839]
+saved summary -> /tmp/moe_probe_oa6losqg/probe_summary.json
+saved curve -> /tmp/moe_probe_oa6losqg/probe_curve.csv

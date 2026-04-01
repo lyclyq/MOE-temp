@@ -1,0 +1,60 @@
+[run] method=ours candidate=local_var_topk_043 seed=2 steps=200 gpu=0
+[run] cmd=
+/root/miniconda3/envs/optimization/bin/python /root/Optimization/MOE-grad-conflict-routing/scripts/run.py --config configs/singletask_cola_real.yaml --set model.backbone_backend=hf --set model.hf_load_pretrained=true --set model.backbone=roberta --set model.hf_pretrained_name=roberta-base --set model.expert_type=lora --set model.routing_mode=topk --set model.num_experts=4 --set model.top_k=2 --set seed=2 --set method.name=ours --set train.steps=200 --set train.eval_every_steps=50 --set method.ours.use_load_norm=true --set method.ours.lambda_align=0.000454251758 --set train.grad_clip=1.073694291 --set train.lr=1.5952542e-05 --set train.weight_decay=0.03141233927 --out /root/Optimization/MOE-grad-conflict-routing/runs/paper_suite_supplement/single_task_add_rerun/single_task/roberta_cola_lora_e4_k2/hpo/ours/trial_runs/local_var_topk_043/ours_s2.json --curve_out /root/Optimization/MOE-grad-conflict-routing/runs/paper_suite_supplement/single_task_add_rerun/single_task/roberta_cola_lora_e4_k2/hpo/ours/trial_runs/local_var_topk_043/ours_s2_curve.csv
+Using the latest cached version of the dataset since glue couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'cola' at /root/.cache/huggingface/datasets/glue/cola/0.0.0/bcdcba79d07bc864c1c254ccfcedcce55bcc9a8c (last modified on Mon Mar 23 09:28:48 2026).
+Loading weights:   0%|          | 0/197 [00:00<?, ?it/s]Loading weights: 100%|██████████| 197/197 [00:00<00:00, 3506.01it/s]
+[1mRobertaModel LOAD REPORT[0m from: roberta-base
+Key                             | Status     | 
+--------------------------------+------------+-
+roberta.embeddings.position_ids | UNEXPECTED | 
+lm_head.bias                    | UNEXPECTED | 
+lm_head.dense.weight            | UNEXPECTED | 
+lm_head.layer_norm.bias         | UNEXPECTED | 
+lm_head.dense.bias              | UNEXPECTED | 
+lm_head.layer_norm.weight       | UNEXPECTED | 
+pooler.dense.bias               | MISSING    | 
+pooler.dense.weight             | MISSING    | 
+
+[3mNotes:
+- UNEXPECTED[3m	:can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+- MISSING[3m	:those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.[0m
+[step 0001/200] method=ours loss=0.6807 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0010/200] method=ours loss=0.5416 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0020/200] method=ours loss=0.6406 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0030/200] method=ours loss=0.5617 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0040/200] method=ours loss=0.4313 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0050/200] method=ours loss=0.4768 train_acc=0.7086 train_loss=0.5194 val_acc=0.6942 val_loss=0.5388 router_H=0.6760 best=0.6942
+           router_load=[0.3224862217903137, 0.006455260794609785, 0.5866219401359558, 0.08443668484687805]
+[step 0060/200] method=ours loss=0.4311 train_acc=0.7086 train_loss=0.5194 val_acc=0.6942 val_loss=0.5388 router_H=0.6760 best=0.6942
+           router_load=[0.3224862217903137, 0.006455260794609785, 0.5866219401359558, 0.08443668484687805]
+[step 0070/200] method=ours loss=0.5607 train_acc=0.7086 train_loss=0.5194 val_acc=0.6942 val_loss=0.5388 router_H=0.6760 best=0.6942
+           router_load=[0.3224862217903137, 0.006455260794609785, 0.5866219401359558, 0.08443668484687805]
+[step 0080/200] method=ours loss=0.4733 train_acc=0.7086 train_loss=0.5194 val_acc=0.6942 val_loss=0.5388 router_H=0.6760 best=0.6942
+           router_load=[0.3224862217903137, 0.006455260794609785, 0.5866219401359558, 0.08443668484687805]
+[step 0090/200] method=ours loss=0.5704 train_acc=0.7086 train_loss=0.5194 val_acc=0.6942 val_loss=0.5388 router_H=0.6760 best=0.6942
+           router_load=[0.3224862217903137, 0.006455260794609785, 0.5866219401359558, 0.08443668484687805]
+[step 0100/200] method=ours loss=0.3546 train_acc=0.8187 train_loss=0.4307 val_acc=0.8044 val_loss=0.4820 router_H=0.6562 best=0.8044
+           router_load=[0.3059871196746826, 0.004696671385318041, 0.6274232268333435, 0.06189310923218727]
+[step 0110/200] method=ours loss=0.7491 train_acc=0.8187 train_loss=0.4307 val_acc=0.8044 val_loss=0.4820 router_H=0.6562 best=0.8044
+           router_load=[0.3059871196746826, 0.004696671385318041, 0.6274232268333435, 0.06189310923218727]
+[step 0120/200] method=ours loss=0.5322 train_acc=0.8187 train_loss=0.4307 val_acc=0.8044 val_loss=0.4820 router_H=0.6562 best=0.8044
+           router_load=[0.3059871196746826, 0.004696671385318041, 0.6274232268333435, 0.06189310923218727]
+[step 0130/200] method=ours loss=0.3744 train_acc=0.8187 train_loss=0.4307 val_acc=0.8044 val_loss=0.4820 router_H=0.6562 best=0.8044
+           router_load=[0.3059871196746826, 0.004696671385318041, 0.6274232268333435, 0.06189310923218727]
+[step 0140/200] method=ours loss=0.4270 train_acc=0.8187 train_loss=0.4307 val_acc=0.8044 val_loss=0.4820 router_H=0.6562 best=0.8044
+           router_load=[0.3059871196746826, 0.004696671385318041, 0.6274232268333435, 0.06189310923218727]
+[step 0150/200] method=ours loss=0.7037 train_acc=0.8336 train_loss=0.3912 val_acc=0.8015 val_loss=0.4467 router_H=0.6656 best=0.8044
+           router_load=[0.2900770902633667, 0.003489016555249691, 0.6094197034835815, 0.09701415151357651]
+[step 0160/200] method=ours loss=0.3120 train_acc=0.8336 train_loss=0.3912 val_acc=0.8015 val_loss=0.4467 router_H=0.6656 best=0.8044
+           router_load=[0.2900770902633667, 0.003489016555249691, 0.6094197034835815, 0.09701415151357651]
+[step 0170/200] method=ours loss=0.5430 train_acc=0.8336 train_loss=0.3912 val_acc=0.8015 val_loss=0.4467 router_H=0.6656 best=0.8044
+           router_load=[0.2900770902633667, 0.003489016555249691, 0.6094197034835815, 0.09701415151357651]
+[step 0180/200] method=ours loss=0.4688 train_acc=0.8336 train_loss=0.3912 val_acc=0.8015 val_loss=0.4467 router_H=0.6656 best=0.8044
+           router_load=[0.2900770902633667, 0.003489016555249691, 0.6094197034835815, 0.09701415151357651]
+[step 0190/200] method=ours loss=0.4269 train_acc=0.8336 train_loss=0.3912 val_acc=0.8015 val_loss=0.4467 router_H=0.6656 best=0.8044
+           router_load=[0.2900770902633667, 0.003489016555249691, 0.6094197034835815, 0.09701415151357651]
+[step 0200/200] method=ours loss=0.7677 train_acc=0.7883 train_loss=0.5050 val_acc=0.7450 val_loss=0.6173 router_H=0.6632 best=0.8044
+           router_load=[0.3291546404361725, 0.000769177742768079, 0.6145886182785034, 0.05548730120062828]
+saved summary -> /root/Optimization/MOE-grad-conflict-routing/runs/paper_suite_supplement/single_task_add_rerun/single_task/roberta_cola_lora_e4_k2/hpo/ours/trial_runs/local_var_topk_043/ours_s2.json
+saved curve -> /root/Optimization/MOE-grad-conflict-routing/runs/paper_suite_supplement/single_task_add_rerun/single_task/roberta_cola_lora_e4_k2/hpo/ours/trial_runs/local_var_topk_043/ours_s2_curve.csv

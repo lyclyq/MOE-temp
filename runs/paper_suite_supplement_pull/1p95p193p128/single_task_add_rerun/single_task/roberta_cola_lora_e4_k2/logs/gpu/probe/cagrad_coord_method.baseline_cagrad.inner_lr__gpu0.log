@@ -1,0 +1,35 @@
+[probe] phase=cagrad:coord:method.baseline_cagrad.inner_lr gpu=0
+[probe] cmd=
+/root/miniconda3/envs/optimization/bin/python /root/Optimization/MOE-grad-conflict-routing/scripts/run.py --config configs/singletask_cola_real.yaml --set train.eval_train_fraction=0.1 --set model.backbone_backend=hf --set model.hf_load_pretrained=true --set model.hf_local_files_only=true --set model.backbone=roberta --set model.hf_pretrained_name=roberta-base --set model.expert_type=lora --set model.routing_mode=topk --set model.num_experts=4 --set model.top_k=2 --set seed=2 --set method.name=baseline_cagrad --set train.steps=100 --set train.eval_every_steps=0 --set method.baseline_cagrad.c=0.246825366 --set method.baseline_cagrad.inner_lr=0.1 --set train.grad_clip=0.9919648274 --set train.lr=2e-05 --set train.weight_decay=0.01 --out /tmp/moe_probe_lp5xfze1/probe_summary.json --curve_out /tmp/moe_probe_lp5xfze1/probe_curve.csv
+Using the latest cached version of the dataset since glue couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'cola' at /root/.cache/huggingface/datasets/glue/cola/0.0.0/bcdcba79d07bc864c1c254ccfcedcce55bcc9a8c (last modified on Thu Mar 26 23:46:11 2026).
+Loading weights:   0%|          | 0/197 [00:00<?, ?it/s]Loading weights: 100%|██████████| 197/197 [00:00<00:00, 3685.53it/s]
+[1mRobertaModel LOAD REPORT[0m from: roberta-base
+Key                             | Status     | 
+--------------------------------+------------+-
+lm_head.dense.bias              | UNEXPECTED | 
+roberta.embeddings.position_ids | UNEXPECTED | 
+lm_head.dense.weight            | UNEXPECTED | 
+lm_head.bias                    | UNEXPECTED | 
+lm_head.layer_norm.bias         | UNEXPECTED | 
+lm_head.layer_norm.weight       | UNEXPECTED | 
+pooler.dense.bias               | MISSING    | 
+pooler.dense.weight             | MISSING    | 
+
+[3mNotes:
+- UNEXPECTED[3m	:can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+- MISSING[3m	:those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.[0m
+[step 0001/100] method=baseline_cagrad loss=0.6855 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0010/100] method=baseline_cagrad loss=0.5415 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0020/100] method=baseline_cagrad loss=0.6425 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0030/100] method=baseline_cagrad loss=0.5521 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0040/100] method=baseline_cagrad loss=0.3840 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0050/100] method=baseline_cagrad loss=0.4015 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0060/100] method=baseline_cagrad loss=0.4686 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0070/100] method=baseline_cagrad loss=0.4773 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0080/100] method=baseline_cagrad loss=0.6322 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0090/100] method=baseline_cagrad loss=0.6026 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0100/100] method=baseline_cagrad loss=0.4222 train_acc=0.8299 train_loss=0.4063 val_acc=0.7987 val_loss=0.4782 router_H=0.6855 best=0.7987
+           router_load=[0.30901211500167847, 0.1483578234910965, 0.5418400764465332, 0.0007900557247921824]
+saved summary -> /tmp/moe_probe_lp5xfze1/probe_summary.json
+saved curve -> /tmp/moe_probe_lp5xfze1/probe_curve.csv

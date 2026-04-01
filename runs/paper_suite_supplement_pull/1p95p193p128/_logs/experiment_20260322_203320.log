@@ -1,0 +1,51 @@
+[master] step 1/3: stage rerun plan
+[rte-rerun] step 1/5 backup current canonical ours
+[rte-rerun] step 2/5 run centered-LR ours-only pipeline
+
+[method] ours -> ours
+[ours:coord:train.lr] launch jobs=40 gpus=[0]
+[progress] [------------------------]   0.00% phase=- jobs=0/40 failed=0 eta=n/a event=plan_add
+[progress] [------------------------]   0.00% phase=ours:coord:train.lr jobs=0/40 failed=0 eta=n/a event=phase_start
+[ours:coord:train.lr] group launch jobs=40 slots={0: 1}
+[retry] method=ours cand=coord_01_anchor seed=2 gpu=0 attempt=1/2
+[retry] method=ours cand=coord_01_anchor seed=2 gpu=0 attempt=2/2
+[progress] [------------------------]   0.00% phase=ours:coord:train.lr jobs=0/40 failed=1 eta=n/a event=job_failed
+[warn] phase=ours:coord:train.lr method=ours cand=coord_01_anchor seed=2 gpu=0 failed_jobs=1/3; continuing
+[retry] method=ours cand=coord_01_anchor seed=3 gpu=0 attempt=1/2
+[retry] method=ours cand=coord_01_anchor seed=3 gpu=0 attempt=2/2
+[progress] [------------------------]   0.00% phase=ours:coord:train.lr jobs=0/40 failed=2 eta=n/a event=job_failed
+[warn] phase=ours:coord:train.lr method=ours cand=coord_01_anchor seed=3 gpu=0 failed_jobs=2/3; continuing
+[retry] method=ours cand=coord_01_train_lr_000 seed=2 gpu=0 attempt=1/2
+[retry] method=ours cand=coord_01_train_lr_000 seed=2 gpu=0 attempt=2/2
+[progress] [------------------------]   0.00% phase=ours:coord:train.lr jobs=0/40 failed=3 eta=n/a event=job_failed
+[progress] [------------------------]   0.00% phase=- jobs=0/40 failed=3 eta=n/a event=phase_end
+[progress] [------------------------]   0.00% phase=- jobs=0/40 failed=3 eta=n/a event=pipeline_failed
+Traceback (most recent call last):
+  File "/root/Optimization/MOE-grad-conflict-routing/scripts/pipeline_hpo_final_plot.py", line 1526, in _run_jobs_group
+    rr = fut.result()
+  File "/root/miniconda3/envs/optimization/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/root/miniconda3/envs/optimization/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/root/miniconda3/envs/optimization/lib/python3.10/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "/root/Optimization/MOE-grad-conflict-routing/scripts/pipeline_hpo_final_plot.py", line 1348, in _run_job_with_retry
+    raise last_err
+  File "/root/Optimization/MOE-grad-conflict-routing/scripts/pipeline_hpo_final_plot.py", line 1322, in _run_job_with_retry
+    _run_job_once(job, config=config, gpu=gpu, log_path=log_path)
+  File "/root/Optimization/MOE-grad-conflict-routing/scripts/pipeline_hpo_final_plot.py", line 1296, in _run_job_once
+    raise subprocess.CalledProcessError(rc, cmd)
+subprocess.CalledProcessError: Command '['/root/miniconda3/envs/optimization/bin/python', '/root/Optimization/MOE-grad-conflict-routing/scripts/run.py', '--config', 'configs/singletask_rte_real.yaml', '--set', 'model.backbone_backend=hf', '--set', 'model.hf_load_pretrained=true', '--set', 'model.backbone=roberta', '--set', 'model.hf_pretrained_name=roberta-base', '--set', 'model.expert_type=ffn', '--set', 'model.routing_mode=topk', '--set', 'model.num_experts=4', '--set', 'model.top_k=2', '--set', 'train.lr=2.5551784142791192e-05', '--set', 'seed=2', '--set', 'method.name=ours', '--set', 'train.steps=200', '--set', 'train.eval_every_steps=50', '--set', 'method.ours.use_load_norm=true', '--set', 'method.ours.lambda_align=0.001', '--set', 'train.grad_clip=1', '--set', 'train.lr=1.980533107e-05', '--set', 'train.weight_decay=0.01', '--out', '/root/Optimization/MOE-grad-conflict-routing/runs/paper_suite_supplement/single_task_add_rerun/rerun/roberta_rte_ffn_e4_k2_ours_lr_centered/hpo/ours/trial_runs/coord_01_train_lr_000/ours_s2.json', '--curve_out', '/root/Optimization/MOE-grad-conflict-routing/runs/paper_suite_supplement/single_task_add_rerun/rerun/roberta_rte_ffn_e4_k2_ours_lr_centered/hpo/ours/trial_runs/coord_01_train_lr_000/ours_s2_curve.csv']' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/root/Optimization/MOE-grad-conflict-routing/scripts/pipeline_hpo_final_plot.py", line 2424, in <module>
+    main()
+  File "/root/Optimization/MOE-grad-conflict-routing/scripts/pipeline_hpo_final_plot.py", line 2033, in main
+    round_results = _run_jobs_parallel(
+  File "/root/Optimization/MOE-grad-conflict-routing/scripts/pipeline_hpo_final_plot.py", line 1647, in _run_jobs_parallel
+    _run_jobs_group(
+  File "/root/Optimization/MOE-grad-conflict-routing/scripts/pipeline_hpo_final_plot.py", line 1556, in _run_jobs_group
+    raise RuntimeError(
+RuntimeError: failure limit reached in phase=ours:coord:train.lr: failed_jobs=3 max_failed_jobs=3

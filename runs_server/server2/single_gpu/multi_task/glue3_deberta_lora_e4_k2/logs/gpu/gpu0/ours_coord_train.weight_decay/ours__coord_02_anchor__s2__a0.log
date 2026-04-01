@@ -1,0 +1,47 @@
+[run] method=ours candidate=coord_02_anchor seed=2 steps=200 gpu=0
+[run] cmd=
+/home/zhujjing/anaconda3/envs/moe/bin/python /home/zhujjing/MOE-grad-conflict-routing/scripts/run.py --config configs/multitask_glue3_rte_mrpc_cola_real.yaml --set model.backbone_backend=hf --set model.hf_load_pretrained=true --set model.hf_local_files_only=true --set model.backbone=deberta --set model.hf_pretrained_name=microsoft/deberta-v3-base --set model.expert_type=lora --set model.routing_mode=topk --set model.num_experts=4 --set model.top_k=2 --set train.eval_train_fraction=0.10 --set train.eval_train_max_batches=-1 --set train.eval_max_batches=-1 --set seed=2 --set method.name=ours --set train.steps=200 --set train.eval_every_steps=100 --set method.ours.use_load_norm=true --set method.ours.lambda_align=0.001 --set train.grad_clip=1 --set train.lr=2.521629285e-05 --set train.weight_decay=0.01 --out /home/zhujjing/MOE-grad-conflict-routing/runs/paper_suite/single_gpu/multi_task/glue3_deberta_lora_e4_k2/hpo/ours/trial_runs/coord_02_anchor/ours_s2.json --curve_out /home/zhujjing/MOE-grad-conflict-routing/runs/paper_suite/single_gpu/multi_task/glue3_deberta_lora_e4_k2/hpo/ours/trial_runs/coord_02_anchor/ours_s2_curve.csv
+Using the latest cached version of the dataset since glue couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'rte' at /home/zhujjing/hf_cache/datasets/glue/rte/0.0.0/bcdcba79d07bc864c1c254ccfcedcce55bcc9a8c (last modified on Thu Mar 19 15:00:36 2026).
+/home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/transformers/utils/hub.py:124: FutureWarning: Using `TRANSFORMERS_CACHE` is deprecated and will be removed in v5 of Transformers. Use `HF_HOME` instead.
+  warnings.warn(
+/home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/transformers/convert_slow_tokenizer.py:560: UserWarning: The sentencepiece tokenizer that you are converting to a fast tokenizer uses the byte fallback option which is not implemented in the fast tokenizers. In practice this means that the fast version of the tokenizer can produce unknown tokens whereas the sentencepiece version would have converted these unknown tokens into a sequence of byte tokens matching the original piece of text.
+  warnings.warn(
+Using the latest cached version of the dataset since glue couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'mrpc' at /home/zhujjing/hf_cache/datasets/glue/mrpc/0.0.0/bcdcba79d07bc864c1c254ccfcedcce55bcc9a8c (last modified on Thu Mar 19 15:01:06 2026).
+Using the latest cached version of the dataset since glue couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'cola' at /home/zhujjing/hf_cache/datasets/glue/cola/0.0.0/bcdcba79d07bc864c1c254ccfcedcce55bcc9a8c (last modified on Thu Mar 19 15:02:09 2026).
+[step 0001/200] method=ours loss=0.7639 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0010/200] method=ours loss=0.5968 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0020/200] method=ours loss=0.5822 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0030/200] method=ours loss=0.5646 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0040/200] method=ours loss=0.6987 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0050/200] method=ours loss=0.6456 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0060/200] method=ours loss=0.6078 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0070/200] method=ours loss=0.5547 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0080/200] method=ours loss=0.5246 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0090/200] method=ours loss=0.5700 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0100/200] method=ours loss=0.5898 train_acc=0.7204 train_loss=0.5412 val_acc=0.7026 val_loss=0.5499 router_H=0.6491 best=0.7026
+           router_load=[0.00700579397380352, 0.19513222575187683, 0.537359356880188, 0.2605024576187134]
+[step 0110/200] method=ours loss=0.5481 train_acc=0.7204 train_loss=0.5412 val_acc=0.7026 val_loss=0.5499 router_H=0.6491 best=0.7026
+           router_load=[0.00700579397380352, 0.19513222575187683, 0.537359356880188, 0.2605024576187134]
+[step 0120/200] method=ours loss=0.4288 train_acc=0.7204 train_loss=0.5412 val_acc=0.7026 val_loss=0.5499 router_H=0.6491 best=0.7026
+           router_load=[0.00700579397380352, 0.19513222575187683, 0.537359356880188, 0.2605024576187134]
+[step 0130/200] method=ours loss=0.4517 train_acc=0.7204 train_loss=0.5412 val_acc=0.7026 val_loss=0.5499 router_H=0.6491 best=0.7026
+           router_load=[0.00700579397380352, 0.19513222575187683, 0.537359356880188, 0.2605024576187134]
+[step 0140/200] method=ours loss=0.3646 train_acc=0.7204 train_loss=0.5412 val_acc=0.7026 val_loss=0.5499 router_H=0.6491 best=0.7026
+           router_load=[0.00700579397380352, 0.19513222575187683, 0.537359356880188, 0.2605024576187134]
+[step 0150/200] method=ours loss=0.4089 train_acc=0.7204 train_loss=0.5412 val_acc=0.7026 val_loss=0.5499 router_H=0.6491 best=0.7026
+           router_load=[0.00700579397380352, 0.19513222575187683, 0.537359356880188, 0.2605024576187134]
+[step 0160/200] method=ours loss=0.6224 train_acc=0.7204 train_loss=0.5412 val_acc=0.7026 val_loss=0.5499 router_H=0.6491 best=0.7026
+           router_load=[0.00700579397380352, 0.19513222575187683, 0.537359356880188, 0.2605024576187134]
+[step 0170/200] method=ours loss=0.5511 train_acc=0.7204 train_loss=0.5412 val_acc=0.7026 val_loss=0.5499 router_H=0.6491 best=0.7026
+           router_load=[0.00700579397380352, 0.19513222575187683, 0.537359356880188, 0.2605024576187134]
+[step 0180/200] method=ours loss=0.4214 train_acc=0.7204 train_loss=0.5412 val_acc=0.7026 val_loss=0.5499 router_H=0.6491 best=0.7026
+           router_load=[0.00700579397380352, 0.19513222575187683, 0.537359356880188, 0.2605024576187134]
+[step 0190/200] method=ours loss=0.4072 train_acc=0.7204 train_loss=0.5412 val_acc=0.7026 val_loss=0.5499 router_H=0.6491 best=0.7026
+           router_load=[0.00700579397380352, 0.19513222575187683, 0.537359356880188, 0.2605024576187134]
+[step 0200/200] method=ours loss=0.4606 train_acc=0.7863 train_loss=0.4408 val_acc=0.7685 val_loss=0.4840 router_H=0.6470 best=0.7685
+           router_load=[0.10087238997220993, 0.22363309562206268, 0.4970707297325134, 0.17842361330986023]
+saved summary -> /home/zhujjing/MOE-grad-conflict-routing/runs/paper_suite/single_gpu/multi_task/glue3_deberta_lora_e4_k2/hpo/ours/trial_runs/coord_02_anchor/ours_s2.json
+saved curve -> /home/zhujjing/MOE-grad-conflict-routing/runs/paper_suite/single_gpu/multi_task/glue3_deberta_lora_e4_k2/hpo/ours/trial_runs/coord_02_anchor/ours_s2_curve.csv

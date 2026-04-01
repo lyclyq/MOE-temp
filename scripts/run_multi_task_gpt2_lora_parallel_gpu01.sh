@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+
+export GPUS="${GPUS:-0}"
+export SUITE_ROOT="${SUITE_ROOT:-runs/paper_suite}"
+export SUITE_PROGRESS_ROOT="${SUITE_PROGRESS_ROOT:-runs/paper_suite/single_gpu/_suite_progress_experiment2}"
+export HPO_SEEDS="${HPO_SEEDS:-2,3}"
+export FINAL_SEEDS="${FINAL_SEEDS:-2,3,5,7,11}"
+export HPO_TRIALS="${HPO_TRIALS:-96}"
+export COORD_TRIALS_PER_KNOB="${COORD_TRIALS_PER_KNOB:-12}"
+export HPO_STEPS="${HPO_STEPS:-200}"
+export FINAL_STEPS="${FINAL_STEPS:-1000}"
+export EVAL_EVERY="${EVAL_EVERY:-100}"
+export PROBE_STEPS="${PROBE_STEPS:-100}"
+export LOCAL_TOPK="${LOCAL_TOPK:-3}"
+export LOCAL_GRID_POINTS="${LOCAL_GRID_POINTS:-3}"
+export METHODS="${METHODS:-baseline,cagrad,ours}"
+export MIXES="${MIXES:-glue3,glue4}"
+export MAINLINE_BACKBONES="${MAINLINE_BACKBONES:-}"
+export GPT2_BACKBONES="${GPT2_BACKBONES:-gpt2}"
+export EXPERT_TYPES="${EXPERT_TYPES:-lora}"
+export NUM_EXPERTS="${NUM_EXPERTS:-4}"
+export TOP_K="${TOP_K:-2}"
+export ROUTING_MODE="${ROUTING_MODE:-topk}"
+export GPU_MEM_UTIL_RATIO="${GPU_MEM_UTIL_RATIO:-0.70}"
+export MAX_WORKERS_PER_GPU="${MAX_WORKERS_PER_GPU:-4}"
+export MAX_FAILED_JOBS="${MAX_FAILED_JOBS:-3}"
+export TRAIN_EVAL_FRACTION="${TRAIN_EVAL_FRACTION:-0.10}"
+export TRAIN_EVAL_MAX_BATCHES="${TRAIN_EVAL_MAX_BATCHES:--1}"
+export VAL_EVAL_MAX_BATCHES="${VAL_EVAL_MAX_BATCHES:--1}"
+export HF_LOCAL_FILES_ONLY="${HF_LOCAL_FILES_ONLY:-true}"
+export CLEAN_RESTART="${CLEAN_RESTART:-0}"
+
+exec bash scripts/run_multi_task_mainline_then_gpt2_medium_gpu01.sh

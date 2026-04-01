@@ -1,0 +1,10 @@
+[Unit]
+Description=Pull appendix outputs from the appendix server
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/yuli0398/Optimization/MOE-grad-conflict-routing
+EnvironmentFile=-%h/.config/moe-appendix-pull.env
+ExecStart=/usr/bin/env bash /home/yuli0398/Optimization/MOE-grad-conflict-routing/scripts/pull_remote_paper_suite_supplement.sh

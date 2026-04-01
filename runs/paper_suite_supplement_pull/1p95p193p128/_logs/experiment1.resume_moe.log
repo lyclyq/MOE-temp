@@ -1,0 +1,51 @@
+
+[method] baseline -> baseline_avg
+[baseline:coord:train.lr] launch jobs=54 gpus=[0]
+[progress] [------------------------]   0.00% phase=- jobs=0/54 failed=0 eta=n/a event=plan_add
+[progress] [------------------------]   0.00% phase=baseline:coord:train.lr jobs=0/54 failed=0 eta=n/a event=phase_start
+[baseline:coord:train.lr] group launch jobs=54 slots={0: 4}
+[progress] [------------------------]   0.00% phase=baseline:coord:train.lr jobs=0/54 failed=1 eta=n/a event=job_failed
+[warn] phase=baseline:coord:train.lr method=baseline cand=coord_01_anchor seed=2 gpu=0 failed_jobs=1/3; continuing
+[progress] [------------------------]   0.00% phase=baseline:coord:train.lr jobs=0/54 failed=2 eta=n/a event=job_failed
+[warn] phase=baseline:coord:train.lr method=baseline cand=coord_01_anchor seed=3 gpu=0 failed_jobs=2/3; continuing
+[progress] [------------------------]   0.00% phase=baseline:coord:train.lr jobs=0/54 failed=3 eta=n/a event=job_failed
+[baseline:coord:train.lr] interrupt: stopping 4 worker process(es)
+[progress] [------------------------]   0.00% phase=- jobs=0/54 failed=3 eta=n/a event=phase_end
+[progress] [------------------------]   0.00% phase=- jobs=0/54 failed=3 eta=n/a event=pipeline_failed
+concurrent.futures.process._RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/root/miniconda3/envs/optimization/lib/python3.10/multiprocessing/queues.py", line 244, in _feed
+    obj = _ForkingPickler.dumps(obj)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/multiprocessing/reduction.py", line 51, in dumps
+    cls(buf, protocol).dump(obj)
+TypeError: cannot pickle '_thread.lock' object
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/root/Optimization/MOE-grad-conflict-routing/scripts/pipeline_hpo_final_plot.py", line 1576, in _run_jobs_group
+    rr = fut.result()
+  File "/root/miniconda3/envs/optimization/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/root/miniconda3/envs/optimization/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/root/miniconda3/envs/optimization/lib/python3.10/multiprocessing/queues.py", line 244, in _feed
+    obj = _ForkingPickler.dumps(obj)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/multiprocessing/reduction.py", line 51, in dumps
+    cls(buf, protocol).dump(obj)
+TypeError: cannot pickle '_thread.lock' object
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/root/Optimization/MOE-grad-conflict-routing/scripts/pipeline_hpo_final_plot.py", line 2474, in <module>
+    main()
+  File "/root/Optimization/MOE-grad-conflict-routing/scripts/pipeline_hpo_final_plot.py", line 2083, in main
+    round_results = _run_jobs_parallel(
+  File "/root/Optimization/MOE-grad-conflict-routing/scripts/pipeline_hpo_final_plot.py", line 1697, in _run_jobs_parallel
+    _run_jobs_group(
+  File "/root/Optimization/MOE-grad-conflict-routing/scripts/pipeline_hpo_final_plot.py", line 1606, in _run_jobs_group
+    raise RuntimeError(
+RuntimeError: failure limit reached in phase=baseline:coord:train.lr: failed_jobs=3 max_failed_jobs=3

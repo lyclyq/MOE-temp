@@ -1,0 +1,115 @@
+[run] method=cagrad candidate=local_var_topk_026 seed=3 steps=200 gpu=0
+[run] cmd=
+/root/miniconda3/envs/optimization/bin/python /root/Optimization/MOE-grad-conflict-routing/scripts/run.py --config configs/singletask_cola_real.yaml --set model.backbone_backend=hf --set model.hf_load_pretrained=true --set model.backbone=roberta --set model.hf_pretrained_name=roberta-base --set model.expert_type=ffn --set model.routing_mode=topk --set model.num_experts=4 --set model.top_k=2 --set seed=3 --set method.name=baseline_cagrad --set train.steps=200 --set train.eval_every_steps=50 --set method.baseline_cagrad.c=0.9288277249 --set method.baseline_cagrad.inner_lr=0.109220816 --set train.grad_clip=1.573448831 --set train.lr=4.899848e-06 --set train.weight_decay=0.01563474402 --out /root/Optimization/MOE-grad-conflict-routing/runs/paper_suite_supplement/single_task_add_rerun/single_task/roberta_cola_ffn_e4_k2/hpo/cagrad/trial_runs/local_var_topk_026/cagrad_s3.json --curve_out /root/Optimization/MOE-grad-conflict-routing/runs/paper_suite_supplement/single_task_add_rerun/single_task/roberta_cola_ffn_e4_k2/hpo/cagrad/trial_runs/local_var_topk_026/cagrad_s3_curve.csv
+Using the latest cached version of the dataset since glue couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'cola' at /root/.cache/huggingface/datasets/glue/cola/0.0.0/bcdcba79d07bc864c1c254ccfcedcce55bcc9a8c (last modified on Mon Mar 23 09:28:48 2026).
+Loading weights:   0%|          | 0/197 [00:00<?, ?it/s]Loading weights: 100%|██████████| 197/197 [00:00<00:00, 2969.95it/s]
+[1mRobertaModel LOAD REPORT[0m from: roberta-base
+Key                             | Status     | 
+--------------------------------+------------+-
+lm_head.layer_norm.bias         | UNEXPECTED | 
+lm_head.bias                    | UNEXPECTED | 
+lm_head.dense.bias              | UNEXPECTED | 
+roberta.embeddings.position_ids | UNEXPECTED | 
+lm_head.dense.weight            | UNEXPECTED | 
+lm_head.layer_norm.weight       | UNEXPECTED | 
+pooler.dense.bias               | MISSING    | 
+pooler.dense.weight             | MISSING    | 
+
+[3mNotes:
+- UNEXPECTED[3m	:can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+- MISSING[3m	:those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.[0m
+[step 0001/200] method=baseline_cagrad loss=0.6780 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0010/200] method=baseline_cagrad loss=0.6157 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0020/200] method=baseline_cagrad loss=0.6912 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0030/200] method=baseline_cagrad loss=0.6600 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0040/200] method=baseline_cagrad loss=0.7187 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0050/200] method=baseline_cagrad loss=0.6111 train_acc=0.7044 train_loss=0.5982 val_acc=0.6913 val_loss=0.6102 router_H=0.6898 best=0.6913
+           router_load=[0.0, 0.35215654969215393, 0.5152401328086853, 0.13260339200496674]
+[step 0060/200] method=baseline_cagrad loss=0.5205 train_acc=0.7044 train_loss=0.5982 val_acc=0.6913 val_loss=0.6102 router_H=0.6898 best=0.6913
+           router_load=[0.0, 0.35215654969215393, 0.5152401328086853, 0.13260339200496674]
+[step 0070/200] method=baseline_cagrad loss=0.6109 train_acc=0.7044 train_loss=0.5982 val_acc=0.6913 val_loss=0.6102 router_H=0.6898 best=0.6913
+           router_load=[0.0, 0.35215654969215393, 0.5152401328086853, 0.13260339200496674]
+[step 0080/200] method=baseline_cagrad loss=0.4752 train_acc=0.7044 train_loss=0.5982 val_acc=0.6913 val_loss=0.6102 router_H=0.6898 best=0.6913
+           router_load=[0.0, 0.35215654969215393, 0.5152401328086853, 0.13260339200496674]
+[step 0090/200] method=baseline_cagrad loss=0.6000 train_acc=0.7044 train_loss=0.5982 val_acc=0.6913 val_loss=0.6102 router_H=0.6898 best=0.6913
+           router_load=[0.0, 0.35215654969215393, 0.5152401328086853, 0.13260339200496674]
+[step 0100/200] method=baseline_cagrad loss=0.4785 train_acc=0.7044 train_loss=0.5393 val_acc=0.6913 val_loss=0.5612 router_H=0.6674 best=0.6913
+           router_load=[0.004251109901815653, 0.25317785143852234, 0.603939414024353, 0.13863155245780945]
+[step 0110/200] method=baseline_cagrad loss=0.4305 train_acc=0.7044 train_loss=0.5393 val_acc=0.6913 val_loss=0.5612 router_H=0.6674 best=0.6913
+           router_load=[0.004251109901815653, 0.25317785143852234, 0.603939414024353, 0.13863155245780945]
+Error in sys.excepthook:
+Traceback (most recent call last):
+  File "/root/miniconda3/envs/optimization/lib/python3.10/linecache.py", line 46, in getlines
+    return updatecache(filename, module_globals)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/linecache.py", line 137, in updatecache
+    lines = fp.readlines()
+  File "/root/miniconda3/envs/optimization/lib/python3.10/codecs.py", line 319, in decode
+    def decode(self, input, final=False):
+KeyboardInterrupt
+
+Original exception was:
+Traceback (most recent call last):
+  File "/root/Optimization/MOE-grad-conflict-routing/scripts/run.py", line 104, in <module>
+    main()
+  File "/root/Optimization/MOE-grad-conflict-routing/scripts/run.py", line 68, in main
+    summary = train(cfg, data, model)
+  File "/root/Optimization/MOE-grad-conflict-routing/src/moe_gc/trainer.py", line 911, in train
+    step_loss = _train_step_baseline(
+  File "/root/Optimization/MOE-grad-conflict-routing/src/moe_gc/trainer.py", line 604, in _train_step_baseline
+    out = model(
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/root/Optimization/MOE-grad-conflict-routing/src/moe_gc/model.py", line 361, in forward
+    h = self.backbone(input_ids=input_ids, attention_mask=attention_mask)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/root/Optimization/MOE-grad-conflict-routing/src/moe_gc/model.py", line 229, in forward
+    out = self.model(input_ids=input_ids, attention_mask=attention_mask)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/transformers/utils/generic.py", line 917, in wrapper
+    output = func(self, *args, **kwargs)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/transformers/utils/output_capturing.py", line 253, in wrapper
+    outputs = func(self, *args, **kwargs)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/transformers/models/roberta/modeling_roberta.py", line 654, in forward
+    encoder_outputs = self.encoder(
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/transformers/models/roberta/modeling_roberta.py", line 525, in forward
+    hidden_states = layer_module(
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/transformers/modeling_layers.py", line 93, in __call__
+    return super().__call__(*args, **kwargs)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/transformers/models/roberta/modeling_roberta.py", line 470, in forward
+    layer_output = apply_chunking_to_forward(
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/transformers/pytorch_utils.py", line 201, in apply_chunking_to_forward
+    return forward_fn(*input_tensors)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/transformers/models/roberta/modeling_roberta.py", line 477, in feed_forward_chunk
+    layer_output = self.output(intermediate_output, attention_output)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/transformers/models/roberta/modeling_roberta.py", line 410, in forward
+    hidden_states = self.LayerNorm(hidden_states + input_tensor)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/torch/nn/modules/normalization.py", line 229, in forward
+    return F.layer_norm(
+  File "/root/miniconda3/envs/optimization/lib/python3.10/site-packages/torch/nn/functional.py", line 2935, in layer_norm
+    return torch.layer_norm(
+KeyboardInterrupt
