@@ -1,0 +1,38 @@
+[run] method=baseline candidate=local_var_topk_000 seed=2 steps=150 gpu=0
+[run] cmd=
+/home/zhujjing/anaconda3/envs/moe/bin/python /home/zhujjing/MOE-grad-conflict-routing/scripts/run.py --config configs/singletask_mrpc_real.yaml --set model.backbone_backend=hf --set model.hf_load_pretrained=true --set model.backbone=roberta --set model.hf_pretrained_name=roberta-base --set model.expert_type=ffn --set model.routing_mode=topk --set model.num_experts=4 --set model.top_k=2 --set seed=2 --set method.name=baseline_avg --set train.steps=150 --set train.eval_every_steps=50 --set train.grad_clip=1.572120212 --set train.lr=1.9211887e-05 --set train.weight_decay=0.004875709175 --out /home/zhujjing/MOE-grad-conflict-routing/runs/paper_suite/single_gpu/single_task/roberta_mrpc_ffn_e4_k2/hpo/baseline/trial_runs/local_var_topk_000/baseline_s2.json --curve_out /home/zhujjing/MOE-grad-conflict-routing/runs/paper_suite/single_gpu/single_task/roberta_mrpc_ffn_e4_k2/hpo/baseline/trial_runs/local_var_topk_000/baseline_s2_curve.csv
+Using the latest cached version of the dataset since glue couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'mrpc' at /home/zhujjing/hf_cache/datasets/glue/mrpc/0.0.0/bcdcba79d07bc864c1c254ccfcedcce55bcc9a8c (last modified on Thu Mar 19 15:01:06 2026).
+/home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/transformers/utils/hub.py:124: FutureWarning: Using `TRANSFORMERS_CACHE` is deprecated and will be removed in v5 of Transformers. Use `HF_HOME` instead.
+  warnings.warn(
+Some weights of RobertaModel were not initialized from the model checkpoint at roberta-base and are newly initialized: ['roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+[step 0001/150] method=baseline_avg loss=0.7015 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0010/150] method=baseline_avg loss=0.6514 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0020/150] method=baseline_avg loss=0.6781 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0030/150] method=baseline_avg loss=0.7517 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0040/150] method=baseline_avg loss=0.5965 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0050/150] method=baseline_avg loss=0.4677 train_acc=0.7053 train_loss=0.5299 val_acc=0.7132 val_loss=0.5224 router_H=0.6456 best=0.7132
+           router_load=[0.6055192351341248, 0.01219104789197445, 0.005514911375939846, 0.37677472829818726]
+[step 0060/150] method=baseline_avg loss=0.5983 train_acc=0.7053 train_loss=0.5299 val_acc=0.7132 val_loss=0.5224 router_H=0.6456 best=0.7132
+           router_load=[0.6055192351341248, 0.01219104789197445, 0.005514911375939846, 0.37677472829818726]
+[step 0070/150] method=baseline_avg loss=0.3393 train_acc=0.7053 train_loss=0.5299 val_acc=0.7132 val_loss=0.5224 router_H=0.6456 best=0.7132
+           router_load=[0.6055192351341248, 0.01219104789197445, 0.005514911375939846, 0.37677472829818726]
+[step 0080/150] method=baseline_avg loss=0.4627 train_acc=0.7053 train_loss=0.5299 val_acc=0.7132 val_loss=0.5224 router_H=0.6456 best=0.7132
+           router_load=[0.6055192351341248, 0.01219104789197445, 0.005514911375939846, 0.37677472829818726]
+[step 0090/150] method=baseline_avg loss=0.2972 train_acc=0.7053 train_loss=0.5299 val_acc=0.7132 val_loss=0.5224 router_H=0.6456 best=0.7132
+           router_load=[0.6055192351341248, 0.01219104789197445, 0.005514911375939846, 0.37677472829818726]
+[step 0100/150] method=baseline_avg loss=0.5268 train_acc=0.8171 train_loss=0.4309 val_acc=0.8235 val_loss=0.4312 router_H=0.5911 best=0.8235
+           router_load=[0.6192517280578613, 0.09763072431087494, 0.0, 0.28311753273010254]
+[step 0110/150] method=baseline_avg loss=0.6808 train_acc=0.8171 train_loss=0.4309 val_acc=0.8235 val_loss=0.4312 router_H=0.5911 best=0.8235
+           router_load=[0.6192517280578613, 0.09763072431087494, 0.0, 0.28311753273010254]
+[step 0120/150] method=baseline_avg loss=0.3197 train_acc=0.8171 train_loss=0.4309 val_acc=0.8235 val_loss=0.4312 router_H=0.5911 best=0.8235
+           router_load=[0.6192517280578613, 0.09763072431087494, 0.0, 0.28311753273010254]
+[step 0130/150] method=baseline_avg loss=0.4456 train_acc=0.8171 train_loss=0.4309 val_acc=0.8235 val_loss=0.4312 router_H=0.5911 best=0.8235
+           router_load=[0.6192517280578613, 0.09763072431087494, 0.0, 0.28311753273010254]
+[step 0140/150] method=baseline_avg loss=0.2551 train_acc=0.8171 train_loss=0.4309 val_acc=0.8235 val_loss=0.4312 router_H=0.5911 best=0.8235
+           router_load=[0.6192517280578613, 0.09763072431087494, 0.0, 0.28311753273010254]
+[step 0150/150] method=baseline_avg loss=0.5574 train_acc=0.8517 train_loss=0.4222 val_acc=0.8505 val_loss=0.4394 router_H=0.3725 best=0.8505
+           router_load=[0.7526561617851257, 0.029206154868006706, 0.00836974661797285, 0.20976795256137848]
+saved summary -> /home/zhujjing/MOE-grad-conflict-routing/runs/paper_suite/single_gpu/single_task/roberta_mrpc_ffn_e4_k2/hpo/baseline/trial_runs/local_var_topk_000/baseline_s2.json
+saved curve -> /home/zhujjing/MOE-grad-conflict-routing/runs/paper_suite/single_gpu/single_task/roberta_mrpc_ffn_e4_k2/hpo/baseline/trial_runs/local_var_topk_000/baseline_s2_curve.csv

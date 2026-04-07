@@ -1,0 +1,14 @@
+[probe] phase=ours:local_var_topk gpu=0
+[probe] cmd=
+/home/zhujjing/anaconda3/envs/moe/bin/python /home/zhujjing/MOE-grad-conflict-routing/scripts/run.py --config configs/singletask_rte_real.yaml --set model.backbone_backend=hf --set model.hf_load_pretrained=true --set model.backbone=roberta --set model.hf_pretrained_name=roberta-base --set model.expert_type=lora --set model.routing_mode=topk --set model.num_experts=4 --set model.top_k=2 --set seed=2 --set method.name=ours --set train.steps=2 --set train.eval_every_steps=0 --set method.ours.use_load_norm=true --set method.ours.lambda_align=0.000617343917 --set train.grad_clip=1.721917769 --set train.lr=1.2608146e-05 --set train.weight_decay=0.03145867636 --out /tmp/moe_probe_4ib99l6n/probe_summary.json --curve_out /tmp/moe_probe_4ib99l6n/probe_curve.csv
+Using the latest cached version of the dataset since glue couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'rte' at /home/zhujjing/hf_cache/datasets/glue/rte/0.0.0/bcdcba79d07bc864c1c254ccfcedcce55bcc9a8c (last modified on Thu Mar 19 15:00:36 2026).
+/home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/transformers/utils/hub.py:124: FutureWarning: Using `TRANSFORMERS_CACHE` is deprecated and will be removed in v5 of Transformers. Use `HF_HOME` instead.
+  warnings.warn(
+Some weights of RobertaModel were not initialized from the model checkpoint at roberta-base and are newly initialized: ['roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+[step 0001/2] method=ours loss=0.7197 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0002/2] method=ours loss=0.6878 train_acc=0.5020 train_loss=0.6936 val_acc=0.5054 val_loss=0.6926 router_H=0.6927 best=0.5054
+           router_load=[0.07231904566287994, 0.027786653488874435, 0.45220237970352173, 0.4476918876171112]
+saved summary -> /tmp/moe_probe_4ib99l6n/probe_summary.json
+saved curve -> /tmp/moe_probe_4ib99l6n/probe_curve.csv

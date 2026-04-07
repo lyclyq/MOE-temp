@@ -1,0 +1,76 @@
+
+[method] cagrad -> baseline_cagrad
+[cagrad:coord:train.lr] launch jobs=24 gpus=[0]
+[progress] [------------------------]   0.00% phase=- jobs=0/24 failed=0 eta=n/a event=plan_add
+[progress] [------------------------]   0.00% phase=cagrad:coord:train.lr jobs=0/24 failed=0 eta=n/a event=phase_start
+[cagrad:coord:train.lr] group launch jobs=24 slots={0: 1}
+[progress] [------------------------]   0.00% phase=cagrad:coord:train.lr jobs=0/24 failed=1 eta=n/a event=job_failed
+[warn] phase=cagrad:coord:train.lr method=cagrad cand=coord_01_anchor seed=2 gpu=0 failed_jobs=1/3; continuing
+[progress] [------------------------]   0.00% phase=cagrad:coord:train.lr jobs=0/24 failed=2 eta=n/a event=job_failed
+[warn] phase=cagrad:coord:train.lr method=cagrad cand=coord_01_anchor seed=3 gpu=0 failed_jobs=2/3; continuing
+[progress] [------------------------]   0.00% phase=cagrad:coord:train.lr jobs=0/24 failed=3 eta=n/a event=job_failed
+Process ForkProcess-1:
+Traceback (most recent call last):
+  File "/root/miniconda3/envs/optimization/lib/python3.10/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/root/miniconda3/envs/optimization/lib/python3.10/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/concurrent/futures/process.py", line 240, in _process_worker
+    call_item = call_queue.get(block=True)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/multiprocessing/queues.py", line 103, in get
+    res = self._recv_bytes()
+  File "/root/miniconda3/envs/optimization/lib/python3.10/multiprocessing/connection.py", line 216, in recv_bytes
+    buf = self._recv_bytes(maxlength)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/multiprocessing/connection.py", line 414, in _recv_bytes
+    buf = self._recv(4)
+  File "/root/miniconda3/envs/optimization/lib/python3.10/multiprocessing/connection.py", line 379, in _recv
+    chunk = read(handle, remaining)
+KeyboardInterrupt
+[retry] method=cagrad cand=coord_01_anchor seed=2 gpu=0 attempt=1/2
+[retry] method=cagrad cand=coord_01_anchor seed=2 gpu=0 attempt=2/2
+[retry] method=cagrad cand=coord_01_anchor seed=3 gpu=0 attempt=1/2
+[retry] method=cagrad cand=coord_01_anchor seed=3 gpu=0 attempt=2/2
+[retry] method=cagrad cand=coord_01_train_lr_000 seed=2 gpu=0 attempt=1/2
+[retry] method=cagrad cand=coord_01_train_lr_000 seed=2 gpu=0 attempt=2/2
+[cagrad:coord:train.lr] interrupt: stopping 1 worker process(es)
+[progress] [------------------------]   0.00% phase=- jobs=0/24 failed=3 eta=n/a event=phase_end
+[progress] [------------------------]   0.00% phase=- jobs=0/24 failed=3 eta=n/a event=pipeline_failed
+concurrent.futures.process._RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/root/miniconda3/envs/optimization/lib/python3.10/concurrent/futures/process.py", line 246, in _process_worker
+    r = call_item.fn(*call_item.args, **call_item.kwargs)
+  File "/root/Optimization/MOE-grad-conflict-routing-appendix2/scripts/pipeline_hpo_final_plot.py", line 1385, in _run_job_with_retry_process_entry
+    return _run_job_with_retry(
+  File "/root/Optimization/MOE-grad-conflict-routing-appendix2/scripts/pipeline_hpo_final_plot.py", line 1343, in _run_job_with_retry
+    raise last_err
+  File "/root/Optimization/MOE-grad-conflict-routing-appendix2/scripts/pipeline_hpo_final_plot.py", line 1317, in _run_job_with_retry
+    _run_job_once(job, config=config, gpu=gpu, log_path=log_path)
+  File "/root/Optimization/MOE-grad-conflict-routing-appendix2/scripts/pipeline_hpo_final_plot.py", line 1291, in _run_job_once
+    raise subprocess.CalledProcessError(rc, cmd)
+subprocess.CalledProcessError: Command '['/root/miniconda3/envs/optimization/bin/python', '/root/Optimization/MOE-grad-conflict-routing-appendix2/scripts/run.py', '--config', 'configs/singletask_sst2_real.yaml', '--set', 'model.backbone_backend=hf', '--set', 'model.hf_load_pretrained=true', '--set', 'model.hf_local_files_only=1', '--set', 'model.backbone=deberta', '--set', 'model.hf_pretrained_name=microsoft/deberta-v3-base', '--set', 'model.expert_type=ffn', '--set', 'model.routing_mode=topk', '--set', 'model.num_experts=4', '--set', 'model.top_k=2', '--set', 'train.eval_val_fraction=0.2', '--set', 'train.skip_train_eval=true', '--set', 'seed=2', '--set', 'method.name=baseline_cagrad', '--set', 'train.steps=200', '--set', 'train.eval_every_steps=100', '--set', 'method.baseline_cagrad.c=0.4', '--set', 'method.baseline_cagrad.inner_lr=0.1', '--set', 'train.grad_clip=1', '--set', 'train.lr=3.056132297e-06', '--set', 'train.weight_decay=0.01', '--out', '/root/Optimization/MOE-grad-conflict-routing-appendix2/runs/paper_suite_server3/experiment4/single_task/deberta_sst2_ffn_e4_k2/_method_workers/cagrad/hpo/cagrad/trial_runs/coord_01_train_lr_000/cagrad_s2.json', '--curve_out', '/root/Optimization/MOE-grad-conflict-routing-appendix2/runs/paper_suite_server3/experiment4/single_task/deberta_sst2_ffn_e4_k2/_method_workers/cagrad/hpo/cagrad/trial_runs/coord_01_train_lr_000/cagrad_s2_curve.csv']' returned non-zero exit status 1.
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/root/Optimization/MOE-grad-conflict-routing-appendix2/scripts/pipeline_hpo_final_plot.py", line 1580, in _run_jobs_group
+    rr = fut.result()
+  File "/root/miniconda3/envs/optimization/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/root/miniconda3/envs/optimization/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+subprocess.CalledProcessError: Command '['/root/miniconda3/envs/optimization/bin/python', '/root/Optimization/MOE-grad-conflict-routing-appendix2/scripts/run.py', '--config', 'configs/singletask_sst2_real.yaml', '--set', 'model.backbone_backend=hf', '--set', 'model.hf_load_pretrained=true', '--set', 'model.hf_local_files_only=1', '--set', 'model.backbone=deberta', '--set', 'model.hf_pretrained_name=microsoft/deberta-v3-base', '--set', 'model.expert_type=ffn', '--set', 'model.routing_mode=topk', '--set', 'model.num_experts=4', '--set', 'model.top_k=2', '--set', 'train.eval_val_fraction=0.2', '--set', 'train.skip_train_eval=true', '--set', 'seed=2', '--set', 'method.name=baseline_cagrad', '--set', 'train.steps=200', '--set', 'train.eval_every_steps=100', '--set', 'method.baseline_cagrad.c=0.4', '--set', 'method.baseline_cagrad.inner_lr=0.1', '--set', 'train.grad_clip=1', '--set', 'train.lr=3.056132297e-06', '--set', 'train.weight_decay=0.01', '--out', '/root/Optimization/MOE-grad-conflict-routing-appendix2/runs/paper_suite_server3/experiment4/single_task/deberta_sst2_ffn_e4_k2/_method_workers/cagrad/hpo/cagrad/trial_runs/coord_01_train_lr_000/cagrad_s2.json', '--curve_out', '/root/Optimization/MOE-grad-conflict-routing-appendix2/runs/paper_suite_server3/experiment4/single_task/deberta_sst2_ffn_e4_k2/_method_workers/cagrad/hpo/cagrad/trial_runs/coord_01_train_lr_000/cagrad_s2_curve.csv']' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/root/Optimization/MOE-grad-conflict-routing-appendix2/scripts/pipeline_hpo_final_plot.py", line 2495, in <module>
+    main()
+  File "/root/Optimization/MOE-grad-conflict-routing-appendix2/scripts/pipeline_hpo_final_plot.py", line 2101, in main
+    round_results = _run_jobs_parallel(
+  File "/root/Optimization/MOE-grad-conflict-routing-appendix2/scripts/pipeline_hpo_final_plot.py", line 1701, in _run_jobs_parallel
+    _run_jobs_group(
+  File "/root/Optimization/MOE-grad-conflict-routing-appendix2/scripts/pipeline_hpo_final_plot.py", line 1610, in _run_jobs_group
+    raise RuntimeError(
+RuntimeError: failure limit reached in phase=cagrad:coord:train.lr: failed_jobs=3 max_failed_jobs=3

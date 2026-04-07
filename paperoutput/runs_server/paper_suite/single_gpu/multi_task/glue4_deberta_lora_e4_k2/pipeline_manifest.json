@@ -1,0 +1,58 @@
+{
+  "config": "configs/multitask_glue4_real.yaml",
+  "coord_trials_per_knob": 12,
+  "disable_mem_probe": false,
+  "eval_every": 100,
+  "extra_set": [
+    "model.backbone_backend=hf",
+    "model.hf_load_pretrained=true",
+    "model.hf_local_files_only=true",
+    "model.backbone=deberta",
+    "model.hf_pretrained_name=microsoft/deberta-v3-base",
+    "model.expert_type=lora",
+    "model.routing_mode=topk",
+    "model.num_experts=4",
+    "model.top_k=2",
+    "train.eval_train_fraction=0.10",
+    "train.eval_train_max_batches=-1",
+    "train.eval_max_batches=-1"
+  ],
+  "final_seeds": [
+    2,
+    3,
+    5,
+    7,
+    11
+  ],
+  "final_steps": 1000,
+  "gpu_mem_util_ratio": 0.7,
+  "hpo_seed_base": 20260311,
+  "hpo_seeds": [
+    2,
+    3
+  ],
+  "hpo_steps": 200,
+  "hpo_strategy": "coordinate_then_variance_topk_local_grid",
+  "hpo_trials": 96,
+  "local_grid_points": 3,
+  "local_topk": 3,
+  "max_failed_jobs": 3,
+  "max_workers_per_gpu": 4,
+  "methods": [
+    "baseline",
+    "cagrad",
+    "ours"
+  ],
+  "notify_emails": [],
+  "notify_events": [
+    "phase_start",
+    "phase_end",
+    "job_failed",
+    "pipeline_done",
+    "pipeline_failed",
+    "failure_limit_reached"
+  ],
+  "probe_steps": 100,
+  "probe_timeout_sec": 600.0,
+  "retries": 2
+}

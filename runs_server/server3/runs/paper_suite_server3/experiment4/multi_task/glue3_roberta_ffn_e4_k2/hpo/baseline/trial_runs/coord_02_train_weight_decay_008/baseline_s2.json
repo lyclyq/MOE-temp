@@ -1,0 +1,308 @@
+{
+  "batch_semantics": {
+    "batch_hpo_semantics": "train.batch_size is the per-task effective batch size; total samples per update equals num_tasks * train.batch_size.",
+    "configured_effective_batch_per_task": 8,
+    "configured_effective_update_samples": 24,
+    "device_transfer_semantics": "GPU staging chunks are only outer transport groups of whole logical micro-batches; they do not redefine vote partitioning or the effective update batch.",
+    "gpu_streaming_chunk_size": 8,
+    "logical_micro_batch_size": 4,
+    "num_tasks_per_update": 3
+  },
+  "best_val_acc": 0.6588904922238256,
+  "cli_overrides": [
+    "model.backbone_backend=hf",
+    "model.hf_load_pretrained=true",
+    "model.hf_local_files_only=1",
+    "model.backbone=roberta",
+    "model.hf_pretrained_name=roberta-base",
+    "model.expert_type=ffn",
+    "model.routing_mode=topk",
+    "model.num_experts=4",
+    "model.top_k=2",
+    "train.eval_val_fraction=0.2",
+    "train.skip_train_eval=true",
+    "seed=2",
+    "method.name=baseline_avg",
+    "train.steps=200",
+    "train.eval_every_steps=100",
+    "train.grad_clip=1",
+    "train.lr=1.263268742e-05",
+    "train.weight_decay=0.01543368426"
+  ],
+  "config_path": "configs/multitask_glue3_rte_mrpc_cola_real.yaml",
+  "config_path_resolved": "/root/Optimization/MOE-grad-conflict-routing-appendix2/configs/multitask_glue3_rte_mrpc_cola_real.yaml",
+  "data_reproducibility": {
+    "data_source": "glue",
+    "global_seed": 2,
+    "loader_seed_base": 2035,
+    "task_order": [
+      "glue/rte",
+      "glue/mrpc",
+      "glue/cola"
+    ],
+    "tasks": {
+      "glue/cola": {
+        "num_labels": 2,
+        "task": "glue/cola",
+        "tokenizer_name": "roberta-base",
+        "train_loader_shuffle_seed": 7300216,
+        "train_size": 8551,
+        "val_loader_shuffle_seed": 7300217,
+        "val_size": 1043
+      },
+      "glue/mrpc": {
+        "num_labels": 2,
+        "task": "glue/mrpc",
+        "tokenizer_name": "roberta-base",
+        "train_loader_shuffle_seed": 7455845,
+        "train_size": 3668,
+        "val_loader_shuffle_seed": 7455846,
+        "val_size": 408
+      },
+      "glue/rte": {
+        "num_labels": 2,
+        "task": "glue/rte",
+        "tokenizer_name": "roberta-base",
+        "train_loader_shuffle_seed": 6612172,
+        "train_size": 2490,
+        "val_loader_shuffle_seed": 6612173,
+        "val_size": 277
+      }
+    }
+  },
+  "final_diagnostics": {
+    "avg_intra_expert_coherence": 0.15814022913751663,
+    "expert_diversity": [
+      0.46872847453316185,
+      0.5224445378103845,
+      0.5566626243458537,
+      0.8355380004921967
+    ],
+    "expert_names": [
+      "e0",
+      "e1",
+      "e2",
+      "e3"
+    ],
+    "expert_purity": [
+      0.7892483472824097,
+      0.7871171236038208,
+      0.699181318283081,
+      0.6098155379295349
+    ],
+    "inter_expert_similarity": 0.04283036150647799,
+    "inter_expert_similarity_matrix": [
+      [
+        1.0,
+        0.07910621860183277,
+        0.01618467650197949,
+        0.05807650385960791
+      ],
+      [
+        0.07910621860183277,
+        1.0,
+        0.02414333673846665,
+        0.04187729481602195
+      ],
+      [
+        0.01618467650197949,
+        0.02414333673846665,
+        1.0,
+        0.03759413852095921
+      ],
+      [
+        0.05807650385960791,
+        0.04187729481602195,
+        0.03759413852095921,
+        1.0
+      ]
+    ],
+    "intra_expert_coherence": [
+      -0.2275919705010169,
+      0.31665633986991315,
+      0.3093175501762849,
+      0.2341789970048854
+    ],
+    "overall_task_conflict_cos": 0.08403231100843551,
+    "task_conflict_matrix": [
+      [
+        1.0,
+        0.1704210373327152,
+        0.031030558180095678
+      ],
+      [
+        0.1704210373327152,
+        1.0,
+        0.05064533751249567
+      ],
+      [
+        0.031030558180095678,
+        0.05064533751249567,
+        1.0
+      ]
+    ],
+    "task_grad_norm_cv": 0.6469370388152013,
+    "task_grad_norms": [
+      2.010564088821411,
+      18.344003677368164,
+      10.579477310180664
+    ],
+    "task_names": [
+      "glue/rte",
+      "glue/mrpc",
+      "glue/cola"
+    ]
+  },
+  "final_step_metrics": {
+    "avg_intra_expert_coherence": 0.15814022913751663,
+    "expert_diversity_e0": 0.46872847453316185,
+    "expert_diversity_e1": 0.5224445378103845,
+    "expert_diversity_e2": 0.5566626243458537,
+    "expert_diversity_e3": 0.8355380004921967,
+    "expert_diversity_mean": 0.5958434092953991,
+    "expert_purity_e0": 0.7892483472824097,
+    "expert_purity_e1": 0.7871171236038208,
+    "expert_purity_e2": 0.699181318283081,
+    "expert_purity_e3": 0.6098155379295349,
+    "expert_purity_mean": 0.7213405817747116,
+    "inter_expert_similarity": 0.04283036150647799,
+    "inter_expert_similarity_e0_e0": 1.0,
+    "inter_expert_similarity_e0_e1": 0.07910621860183277,
+    "inter_expert_similarity_e0_e2": 0.01618467650197949,
+    "inter_expert_similarity_e0_e3": 0.05807650385960791,
+    "inter_expert_similarity_e1_e0": 0.07910621860183277,
+    "inter_expert_similarity_e1_e1": 1.0,
+    "inter_expert_similarity_e1_e2": 0.02414333673846665,
+    "inter_expert_similarity_e1_e3": 0.04187729481602195,
+    "inter_expert_similarity_e2_e0": 0.01618467650197949,
+    "inter_expert_similarity_e2_e1": 0.02414333673846665,
+    "inter_expert_similarity_e2_e2": 1.0,
+    "inter_expert_similarity_e2_e3": 0.03759413852095921,
+    "inter_expert_similarity_e3_e0": 0.05807650385960791,
+    "inter_expert_similarity_e3_e1": 0.04187729481602195,
+    "inter_expert_similarity_e3_e2": 0.03759413852095921,
+    "inter_expert_similarity_e3_e3": 1.0,
+    "intra_expert_coherence_e0": -0.2275919705010169,
+    "intra_expert_coherence_e1": 0.31665633986991315,
+    "intra_expert_coherence_e2": 0.3093175501762849,
+    "intra_expert_coherence_e3": 0.2341789970048854,
+    "load_cv": 0.615760862827301,
+    "load_max_min_ratio": 5.303263916083842,
+    "overall_task_conflict_cos": 0.08403231100843551,
+    "router_entropy": 0.6526253289646573,
+    "router_load_e0": 0.11644712090492249,
+    "router_load_e1": 0.4493996798992157,
+    "router_load_e2": 0.08474020659923553,
+    "router_load_e3": 0.34941303730010986,
+    "step": 200.0,
+    "task_acc__glue_cola": 0.6990740740740741,
+    "task_acc__glue_mrpc": 0.7954545454545454,
+    "task_acc__glue_rte": 0.48214285714285715,
+    "task_conflict_t0_t0": 1.0,
+    "task_conflict_t0_t1": 0.1704210373327152,
+    "task_conflict_t0_t2": 0.031030558180095678,
+    "task_conflict_t1_t0": 0.1704210373327152,
+    "task_conflict_t1_t1": 1.0,
+    "task_conflict_t1_t2": 0.05064533751249567,
+    "task_conflict_t2_t0": 0.031030558180095678,
+    "task_conflict_t2_t1": 0.05064533751249567,
+    "task_conflict_t2_t2": 1.0,
+    "task_grad_norm_cv": 0.6469370388152013,
+    "task_loss__glue_cola": 0.6138960833626764,
+    "task_loss__glue_mrpc": 0.44034926864233886,
+    "task_loss__glue_rte": 0.6887926842485156,
+    "train_acc": NaN,
+    "train_loss": NaN,
+    "train_step_loss": 0.5830970108509064,
+    "utilization_ratio": 0.5,
+    "val_acc": 0.6588904922238256,
+    "val_loss": 0.5810126787511769
+  },
+  "final_val_acc": 0.6588904922238256,
+  "method": "baseline_avg",
+  "num_eval_points": 2,
+  "overhead": {
+    "mean_train_step_time_sec": 0.5164423325046664,
+    "peak_cuda_memory_mb": 3611.474609375,
+    "wall_time_sec": 206.04162549600005
+  },
+  "reproducibility": {
+    "command": "/root/Optimization/MOE-grad-conflict-routing-appendix2/scripts/run.py --config configs/multitask_glue3_rte_mrpc_cola_real.yaml --set model.backbone_backend=hf --set model.hf_load_pretrained=true --set model.hf_local_files_only=1 --set model.backbone=roberta --set model.hf_pretrained_name=roberta-base --set model.expert_type=ffn --set model.routing_mode=topk --set model.num_experts=4 --set model.top_k=2 --set train.eval_val_fraction=0.2 --set train.skip_train_eval=true --set seed=2 --set method.name=baseline_avg --set train.steps=200 --set train.eval_every_steps=100 --set train.grad_clip=1 --set train.lr=1.263268742e-05 --set train.weight_decay=0.01543368426 --out /root/Optimization/MOE-grad-conflict-routing-appendix2/runs/paper_suite_server3/experiment4/multi_task/glue3_roberta_ffn_e4_k2/_method_workers/baseline/hpo/baseline/trial_runs/coord_02_train_weight_decay_008/baseline_s2.json --curve_out /root/Optimization/MOE-grad-conflict-routing-appendix2/runs/paper_suite_server3/experiment4/multi_task/glue3_roberta_ffn_e4_k2/_method_workers/baseline/hpo/baseline/trial_runs/coord_02_train_weight_decay_008/baseline_s2_curve.csv",
+    "curve_path": "/root/Optimization/MOE-grad-conflict-routing-appendix2/runs/paper_suite_server3/experiment4/multi_task/glue3_roberta_ffn_e4_k2/_method_workers/baseline/hpo/baseline/trial_runs/coord_02_train_weight_decay_008/baseline_s2_curve.csv",
+    "cwd": "/root/Optimization/MOE-grad-conflict-routing-appendix2",
+    "runtime": {
+      "cuda_available": true,
+      "cuda_device_count": 1,
+      "cuda_device_names": [
+        "NVIDIA RTX PRO 6000 Blackwell Server Edition"
+      ],
+      "platform": "Linux-5.15.0-139-generic-x86_64-with-glibc2.35",
+      "python_version": "3.10.20",
+      "torch_version": "2.10.0+cu128"
+    },
+    "summary_path": "/root/Optimization/MOE-grad-conflict-routing-appendix2/runs/paper_suite_server3/experiment4/multi_task/glue3_roberta_ffn_e4_k2/_method_workers/baseline/hpo/baseline/trial_runs/coord_02_train_weight_decay_008/baseline_s2.json"
+  },
+  "resolved_config": {
+    "data": {
+      "datasets": [
+        "glue/rte",
+        "glue/mrpc",
+        "glue/cola"
+      ],
+      "source": "glue",
+      "train_size": 0,
+      "val_size": 0
+    },
+    "method": {
+      "baseline_cagrad": {
+        "c": 0.4,
+        "eps": 1e-08,
+        "inner_lr": 0.1,
+        "inner_steps": 10
+      },
+      "name": "baseline_avg",
+      "ours": {
+        "eps": 1e-08,
+        "lambda_align": 0.001,
+        "micro_batch_size": 8
+      }
+    },
+    "model": {
+      "backbone": "roberta",
+      "backbone_backend": "hf",
+      "dropout": 0.1,
+      "expert_type": "ffn",
+      "ffn_hidden_dim": 3072,
+      "hf_load_pretrained": true,
+      "hf_local_files_only": 1,
+      "hf_pretrained_name": "roberta-base",
+      "hidden_dim": 768,
+      "lora_alpha": 16.0,
+      "lora_rank": 16,
+      "max_seq_len": 128,
+      "num_classes": 2,
+      "num_experts": 4,
+      "routing_mode": "topk",
+      "seq_len": 128,
+      "top_k": 2,
+      "vocab_size": 30522
+    },
+    "seed": 2,
+    "train": {
+      "batch_size": 8,
+      "device_batch_size": 0,
+      "eval_every_steps": 100,
+      "eval_max_batches": 0,
+      "eval_val_fraction": 0.2,
+      "grad_clip": 1,
+      "log_every": 10,
+      "lr": 1.263268742e-05,
+      "micro_batch_size": 4,
+      "skip_train_eval": true,
+      "steps": 200,
+      "weight_decay": 0.01543368426
+    }
+  },
+  "resolved_config_sha256": "e1f7b6cffb224b995e94b8fc2c38fd587a38b173afa8de4ff0e273e55ab70413",
+  "seed": 2
+}

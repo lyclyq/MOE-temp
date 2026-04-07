@@ -1,0 +1,208 @@
+[run] method=cagrad candidate=coord_02_anchor seed=2 steps=1000 gpu=0
+[run] cmd=
+/home/zhujjing/anaconda3/envs/moe/bin/python /home/zhujjing/MOE-grad-conflict-routing/scripts/run.py --config configs/singletask_sst2_real.yaml --set model.backbone_backend=hf --set model.hf_load_pretrained=true --set model.backbone=roberta --set model.hf_pretrained_name=roberta-base --set model.expert_type=ffn --set model.routing_mode=topk --set model.num_experts=4 --set model.top_k=2 --set seed=2 --set method.name=baseline_cagrad --set train.steps=1000 --set train.eval_every_steps=50 --set method.baseline_cagrad.c=0.4 --set method.baseline_cagrad.inner_lr=0.1 --set train.grad_clip=1 --set train.lr=2.410351909e-05 --set train.weight_decay=0.01 --out /home/zhujjing/MOE-grad-conflict-routing/runs/paper_suite/single_gpu/single_task/roberta_sst2_ffn_e4_k2/final/cagrad_s2.json --curve_out /home/zhujjing/MOE-grad-conflict-routing/runs/paper_suite/single_gpu/single_task/roberta_sst2_ffn_e4_k2/final/cagrad_s2_curve.csv
+Using the latest cached version of the dataset since glue couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'sst2' at /home/zhujjing/hf_cache/datasets/glue/sst2/0.0.0/bcdcba79d07bc864c1c254ccfcedcce55bcc9a8c (last modified on Thu Mar 19 15:01:41 2026).
+/home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/transformers/utils/hub.py:124: FutureWarning: Using `TRANSFORMERS_CACHE` is deprecated and will be removed in v5 of Transformers. Use `HF_HOME` instead.
+  warnings.warn(
+Some weights of RobertaModel were not initialized from the model checkpoint at roberta-base and are newly initialized: ['roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+[step 0001/1000] method=baseline_cagrad loss=0.6586 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0010/1000] method=baseline_cagrad loss=0.7216 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0020/1000] method=baseline_cagrad loss=0.5158 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0030/1000] method=baseline_cagrad loss=0.6844 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0040/1000] method=baseline_cagrad loss=0.2964 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0050/1000] method=baseline_cagrad loss=0.4012 train_acc=0.8540 train_loss=0.3748 val_acc=0.8394 val_loss=0.4353 router_H=0.4229 best=0.8394
+           router_load=[0.26869019865989685, 0.11929357796907425, 0.611894965171814, 0.00012137045268900692]
+[step 0060/1000] method=baseline_cagrad loss=0.5012 train_acc=0.8540 train_loss=0.3748 val_acc=0.8394 val_loss=0.4353 router_H=0.4229 best=0.8394
+           router_load=[0.26869019865989685, 0.11929357796907425, 0.611894965171814, 0.00012137045268900692]
+[step 0070/1000] method=baseline_cagrad loss=0.4075 train_acc=0.8540 train_loss=0.3748 val_acc=0.8394 val_loss=0.4353 router_H=0.4229 best=0.8394
+           router_load=[0.26869019865989685, 0.11929357796907425, 0.611894965171814, 0.00012137045268900692]
+[step 0080/1000] method=baseline_cagrad loss=0.4410 train_acc=0.8540 train_loss=0.3748 val_acc=0.8394 val_loss=0.4353 router_H=0.4229 best=0.8394
+           router_load=[0.26869019865989685, 0.11929357796907425, 0.611894965171814, 0.00012137045268900692]
+[step 0090/1000] method=baseline_cagrad loss=0.2379 train_acc=0.8540 train_loss=0.3748 val_acc=0.8394 val_loss=0.4353 router_H=0.4229 best=0.8394
+           router_load=[0.26869019865989685, 0.11929357796907425, 0.611894965171814, 0.00012137045268900692]
+[step 0100/1000] method=baseline_cagrad loss=0.4030 train_acc=0.8516 train_loss=0.3650 val_acc=0.8830 val_loss=0.3183 router_H=0.5415 best=0.8830
+           router_load=[0.4241204559803009, 0.08600412309169769, 0.48348018527030945, 0.006395268719643354]
+[step 0110/1000] method=baseline_cagrad loss=0.4181 train_acc=0.8516 train_loss=0.3650 val_acc=0.8830 val_loss=0.3183 router_H=0.5415 best=0.8830
+           router_load=[0.4241204559803009, 0.08600412309169769, 0.48348018527030945, 0.006395268719643354]
+[step 0120/1000] method=baseline_cagrad loss=0.5359 train_acc=0.8516 train_loss=0.3650 val_acc=0.8830 val_loss=0.3183 router_H=0.5415 best=0.8830
+           router_load=[0.4241204559803009, 0.08600412309169769, 0.48348018527030945, 0.006395268719643354]
+[step 0130/1000] method=baseline_cagrad loss=0.3126 train_acc=0.8516 train_loss=0.3650 val_acc=0.8830 val_loss=0.3183 router_H=0.5415 best=0.8830
+           router_load=[0.4241204559803009, 0.08600412309169769, 0.48348018527030945, 0.006395268719643354]
+[step 0140/1000] method=baseline_cagrad loss=0.6039 train_acc=0.8516 train_loss=0.3650 val_acc=0.8830 val_loss=0.3183 router_H=0.5415 best=0.8830
+           router_load=[0.4241204559803009, 0.08600412309169769, 0.48348018527030945, 0.006395268719643354]
+[step 0150/1000] method=baseline_cagrad loss=0.5836 train_acc=0.8864 train_loss=0.2938 val_acc=0.8945 val_loss=0.2999 router_H=0.4096 best=0.8945
+           router_load=[0.4532281458377838, 0.07692895829677582, 0.46956029534339905, 0.0002827512507792562]
+[step 0160/1000] method=baseline_cagrad loss=0.3652 train_acc=0.8864 train_loss=0.2938 val_acc=0.8945 val_loss=0.2999 router_H=0.4096 best=0.8945
+           router_load=[0.4532281458377838, 0.07692895829677582, 0.46956029534339905, 0.0002827512507792562]
+[step 0170/1000] method=baseline_cagrad loss=0.1433 train_acc=0.8864 train_loss=0.2938 val_acc=0.8945 val_loss=0.2999 router_H=0.4096 best=0.8945
+           router_load=[0.4532281458377838, 0.07692895829677582, 0.46956029534339905, 0.0002827512507792562]
+[step 0180/1000] method=baseline_cagrad loss=0.0524 train_acc=0.8864 train_loss=0.2938 val_acc=0.8945 val_loss=0.2999 router_H=0.4096 best=0.8945
+           router_load=[0.4532281458377838, 0.07692895829677582, 0.46956029534339905, 0.0002827512507792562]
+[step 0190/1000] method=baseline_cagrad loss=0.3195 train_acc=0.8864 train_loss=0.2938 val_acc=0.8945 val_loss=0.2999 router_H=0.4096 best=0.8945
+           router_load=[0.4532281458377838, 0.07692895829677582, 0.46956029534339905, 0.0002827512507792562]
+[step 0200/1000] method=baseline_cagrad loss=0.5519 train_acc=0.8937 train_loss=0.2738 val_acc=0.8911 val_loss=0.2818 router_H=0.4178 best=0.8945
+           router_load=[0.46754375100135803, 0.03285551071166992, 0.48232948780059814, 0.01727130636572838]
+[step 0210/1000] method=baseline_cagrad loss=0.3643 train_acc=0.8937 train_loss=0.2738 val_acc=0.8911 val_loss=0.2818 router_H=0.4178 best=0.8945
+           router_load=[0.46754375100135803, 0.03285551071166992, 0.48232948780059814, 0.01727130636572838]
+[step 0220/1000] method=baseline_cagrad loss=0.4065 train_acc=0.8937 train_loss=0.2738 val_acc=0.8911 val_loss=0.2818 router_H=0.4178 best=0.8945
+           router_load=[0.46754375100135803, 0.03285551071166992, 0.48232948780059814, 0.01727130636572838]
+[step 0230/1000] method=baseline_cagrad loss=0.0932 train_acc=0.8937 train_loss=0.2738 val_acc=0.8911 val_loss=0.2818 router_H=0.4178 best=0.8945
+           router_load=[0.46754375100135803, 0.03285551071166992, 0.48232948780059814, 0.01727130636572838]
+[step 0240/1000] method=baseline_cagrad loss=0.0676 train_acc=0.8937 train_loss=0.2738 val_acc=0.8911 val_loss=0.2818 router_H=0.4178 best=0.8945
+           router_load=[0.46754375100135803, 0.03285551071166992, 0.48232948780059814, 0.01727130636572838]
+[step 0250/1000] method=baseline_cagrad loss=0.2865 train_acc=0.9061 train_loss=0.2708 val_acc=0.9163 val_loss=0.2612 router_H=0.3535 best=0.9163
+           router_load=[0.42219069600105286, 0.07777608931064606, 0.49575772881507874, 0.004275455605238676]
+[step 0260/1000] method=baseline_cagrad loss=0.2878 train_acc=0.9061 train_loss=0.2708 val_acc=0.9163 val_loss=0.2612 router_H=0.3535 best=0.9163
+           router_load=[0.42219069600105286, 0.07777608931064606, 0.49575772881507874, 0.004275455605238676]
+[step 0270/1000] method=baseline_cagrad loss=0.2186 train_acc=0.9061 train_loss=0.2708 val_acc=0.9163 val_loss=0.2612 router_H=0.3535 best=0.9163
+           router_load=[0.42219069600105286, 0.07777608931064606, 0.49575772881507874, 0.004275455605238676]
+[step 0280/1000] method=baseline_cagrad loss=0.3829 train_acc=0.9061 train_loss=0.2708 val_acc=0.9163 val_loss=0.2612 router_H=0.3535 best=0.9163
+           router_load=[0.42219069600105286, 0.07777608931064606, 0.49575772881507874, 0.004275455605238676]
+[step 0290/1000] method=baseline_cagrad loss=0.1403 train_acc=0.9061 train_loss=0.2708 val_acc=0.9163 val_loss=0.2612 router_H=0.3535 best=0.9163
+           router_load=[0.42219069600105286, 0.07777608931064606, 0.49575772881507874, 0.004275455605238676]
+[step 0300/1000] method=baseline_cagrad loss=0.3861 train_acc=0.8859 train_loss=0.3042 val_acc=0.9060 val_loss=0.2793 router_H=0.3693 best=0.9163
+           router_load=[0.4801665246486664, 0.07133011519908905, 0.4478856027126312, 0.0006177843897603452]
+[step 0310/1000] method=baseline_cagrad loss=0.3639 train_acc=0.8859 train_loss=0.3042 val_acc=0.9060 val_loss=0.2793 router_H=0.3693 best=0.9163
+           router_load=[0.4801665246486664, 0.07133011519908905, 0.4478856027126312, 0.0006177843897603452]
+[step 0320/1000] method=baseline_cagrad loss=0.2699 train_acc=0.8859 train_loss=0.3042 val_acc=0.9060 val_loss=0.2793 router_H=0.3693 best=0.9163
+           router_load=[0.4801665246486664, 0.07133011519908905, 0.4478856027126312, 0.0006177843897603452]
+[step 0330/1000] method=baseline_cagrad loss=0.1402 train_acc=0.8859 train_loss=0.3042 val_acc=0.9060 val_loss=0.2793 router_H=0.3693 best=0.9163
+           router_load=[0.4801665246486664, 0.07133011519908905, 0.4478856027126312, 0.0006177843897603452]
+[step 0340/1000] method=baseline_cagrad loss=0.1340 train_acc=0.8859 train_loss=0.3042 val_acc=0.9060 val_loss=0.2793 router_H=0.3693 best=0.9163
+           router_load=[0.4801665246486664, 0.07133011519908905, 0.4478856027126312, 0.0006177843897603452]
+[step 0350/1000] method=baseline_cagrad loss=0.4106 train_acc=0.8835 train_loss=0.2875 val_acc=0.9094 val_loss=0.2321 router_H=0.3527 best=0.9163
+           router_load=[0.3850007653236389, 0.027361584827303886, 0.5870298147201538, 0.0006078465958125889]
+[step 0360/1000] method=baseline_cagrad loss=0.2593 train_acc=0.8835 train_loss=0.2875 val_acc=0.9094 val_loss=0.2321 router_H=0.3527 best=0.9163
+           router_load=[0.3850007653236389, 0.027361584827303886, 0.5870298147201538, 0.0006078465958125889]
+[step 0370/1000] method=baseline_cagrad loss=0.1839 train_acc=0.8835 train_loss=0.2875 val_acc=0.9094 val_loss=0.2321 router_H=0.3527 best=0.9163
+           router_load=[0.3850007653236389, 0.027361584827303886, 0.5870298147201538, 0.0006078465958125889]
+[step 0380/1000] method=baseline_cagrad loss=0.5255 train_acc=0.8835 train_loss=0.2875 val_acc=0.9094 val_loss=0.2321 router_H=0.3527 best=0.9163
+           router_load=[0.3850007653236389, 0.027361584827303886, 0.5870298147201538, 0.0006078465958125889]
+[step 0390/1000] method=baseline_cagrad loss=0.2115 train_acc=0.8835 train_loss=0.2875 val_acc=0.9094 val_loss=0.2321 router_H=0.3527 best=0.9163
+           router_load=[0.3850007653236389, 0.027361584827303886, 0.5870298147201538, 0.0006078465958125889]
+[step 0400/1000] method=baseline_cagrad loss=0.0260 train_acc=0.9145 train_loss=0.2340 val_acc=0.9232 val_loss=0.2226 router_H=0.3044 best=0.9232
+           router_load=[0.43534013628959656, 0.04188411310315132, 0.5214464664459229, 0.0013290842762216926]
+[step 0410/1000] method=baseline_cagrad loss=0.4587 train_acc=0.9145 train_loss=0.2340 val_acc=0.9232 val_loss=0.2226 router_H=0.3044 best=0.9232
+           router_load=[0.43534013628959656, 0.04188411310315132, 0.5214464664459229, 0.0013290842762216926]
+[step 0420/1000] method=baseline_cagrad loss=0.4925 train_acc=0.9145 train_loss=0.2340 val_acc=0.9232 val_loss=0.2226 router_H=0.3044 best=0.9232
+           router_load=[0.43534013628959656, 0.04188411310315132, 0.5214464664459229, 0.0013290842762216926]
+[step 0430/1000] method=baseline_cagrad loss=0.0622 train_acc=0.9145 train_loss=0.2340 val_acc=0.9232 val_loss=0.2226 router_H=0.3044 best=0.9232
+           router_load=[0.43534013628959656, 0.04188411310315132, 0.5214464664459229, 0.0013290842762216926]
+[step 0440/1000] method=baseline_cagrad loss=0.8862 train_acc=0.9145 train_loss=0.2340 val_acc=0.9232 val_loss=0.2226 router_H=0.3044 best=0.9232
+           router_load=[0.43534013628959656, 0.04188411310315132, 0.5214464664459229, 0.0013290842762216926]
+[step 0450/1000] method=baseline_cagrad loss=0.2895 train_acc=0.8863 train_loss=0.3304 val_acc=0.8945 val_loss=0.3288 router_H=0.2971 best=0.9232
+           router_load=[0.4036456048488617, 0.029572075232863426, 0.5639491081237793, 0.002833153586834669]
+[step 0460/1000] method=baseline_cagrad loss=0.6027 train_acc=0.8863 train_loss=0.3304 val_acc=0.8945 val_loss=0.3288 router_H=0.2971 best=0.9232
+           router_load=[0.4036456048488617, 0.029572075232863426, 0.5639491081237793, 0.002833153586834669]
+[step 0470/1000] method=baseline_cagrad loss=0.8191 train_acc=0.8863 train_loss=0.3304 val_acc=0.8945 val_loss=0.3288 router_H=0.2971 best=0.9232
+           router_load=[0.4036456048488617, 0.029572075232863426, 0.5639491081237793, 0.002833153586834669]
+[step 0480/1000] method=baseline_cagrad loss=0.3389 train_acc=0.8863 train_loss=0.3304 val_acc=0.8945 val_loss=0.3288 router_H=0.2971 best=0.9232
+           router_load=[0.4036456048488617, 0.029572075232863426, 0.5639491081237793, 0.002833153586834669]
+[step 0490/1000] method=baseline_cagrad loss=0.0194 train_acc=0.8863 train_loss=0.3304 val_acc=0.8945 val_loss=0.3288 router_H=0.2971 best=0.9232
+           router_load=[0.4036456048488617, 0.029572075232863426, 0.5639491081237793, 0.002833153586834669]
+[step 0500/1000] method=baseline_cagrad loss=0.6857 train_acc=0.9145 train_loss=0.2591 val_acc=0.9266 val_loss=0.2371 router_H=0.3731 best=0.9266
+           router_load=[0.439865380525589, 0.08830174058675766, 0.4704155921936035, 0.0014173624804243445]
+[step 0510/1000] method=baseline_cagrad loss=0.8935 train_acc=0.9145 train_loss=0.2591 val_acc=0.9266 val_loss=0.2371 router_H=0.3731 best=0.9266
+           router_load=[0.439865380525589, 0.08830174058675766, 0.4704155921936035, 0.0014173624804243445]
+[step 0520/1000] method=baseline_cagrad loss=0.1685 train_acc=0.9145 train_loss=0.2591 val_acc=0.9266 val_loss=0.2371 router_H=0.3731 best=0.9266
+           router_load=[0.439865380525589, 0.08830174058675766, 0.4704155921936035, 0.0014173624804243445]
+[step 0530/1000] method=baseline_cagrad loss=0.5203 train_acc=0.9145 train_loss=0.2591 val_acc=0.9266 val_loss=0.2371 router_H=0.3731 best=0.9266
+           router_load=[0.439865380525589, 0.08830174058675766, 0.4704155921936035, 0.0014173624804243445]
+[step 0540/1000] method=baseline_cagrad loss=0.1906 train_acc=0.9145 train_loss=0.2591 val_acc=0.9266 val_loss=0.2371 router_H=0.3731 best=0.9266
+           router_load=[0.439865380525589, 0.08830174058675766, 0.4704155921936035, 0.0014173624804243445]
+[step 0550/1000] method=baseline_cagrad loss=0.1643 train_acc=0.9106 train_loss=0.2387 val_acc=0.9094 val_loss=0.2382 router_H=0.4118 best=0.9266
+           router_load=[0.4879007935523987, 0.07781218737363815, 0.4338555634021759, 0.0004315584374126047]
+[step 0560/1000] method=baseline_cagrad loss=0.2993 train_acc=0.9106 train_loss=0.2387 val_acc=0.9094 val_loss=0.2382 router_H=0.4118 best=0.9266
+           router_load=[0.4879007935523987, 0.07781218737363815, 0.4338555634021759, 0.0004315584374126047]
+[step 0570/1000] method=baseline_cagrad loss=0.2387 train_acc=0.9106 train_loss=0.2387 val_acc=0.9094 val_loss=0.2382 router_H=0.4118 best=0.9266
+           router_load=[0.4879007935523987, 0.07781218737363815, 0.4338555634021759, 0.0004315584374126047]
+[step 0580/1000] method=baseline_cagrad loss=0.0705 train_acc=0.9106 train_loss=0.2387 val_acc=0.9094 val_loss=0.2382 router_H=0.4118 best=0.9266
+           router_load=[0.4879007935523987, 0.07781218737363815, 0.4338555634021759, 0.0004315584374126047]
+[step 0590/1000] method=baseline_cagrad loss=0.2034 train_acc=0.9106 train_loss=0.2387 val_acc=0.9094 val_loss=0.2382 router_H=0.4118 best=0.9266
+           router_load=[0.4879007935523987, 0.07781218737363815, 0.4338555634021759, 0.0004315584374126047]
+[step 0600/1000] method=baseline_cagrad loss=0.1816 train_acc=0.9143 train_loss=0.2270 val_acc=0.9174 val_loss=0.2263 router_H=0.4015 best=0.9266
+           router_load=[0.4286426305770874, 0.09308616071939468, 0.4781259298324585, 0.00014538152026943862]
+[step 0610/1000] method=baseline_cagrad loss=0.0506 train_acc=0.9143 train_loss=0.2270 val_acc=0.9174 val_loss=0.2263 router_H=0.4015 best=0.9266
+           router_load=[0.4286426305770874, 0.09308616071939468, 0.4781259298324585, 0.00014538152026943862]
+[step 0620/1000] method=baseline_cagrad loss=0.6151 train_acc=0.9143 train_loss=0.2270 val_acc=0.9174 val_loss=0.2263 router_H=0.4015 best=0.9266
+           router_load=[0.4286426305770874, 0.09308616071939468, 0.4781259298324585, 0.00014538152026943862]
+[step 0630/1000] method=baseline_cagrad loss=0.4886 train_acc=0.9143 train_loss=0.2270 val_acc=0.9174 val_loss=0.2263 router_H=0.4015 best=0.9266
+           router_load=[0.4286426305770874, 0.09308616071939468, 0.4781259298324585, 0.00014538152026943862]
+[step 0640/1000] method=baseline_cagrad loss=0.5233 train_acc=0.9143 train_loss=0.2270 val_acc=0.9174 val_loss=0.2263 router_H=0.4015 best=0.9266
+           router_load=[0.4286426305770874, 0.09308616071939468, 0.4781259298324585, 0.00014538152026943862]
+[step 0650/1000] method=baseline_cagrad loss=0.2392 train_acc=0.9060 train_loss=0.2479 val_acc=0.8865 val_loss=0.3108 router_H=0.3894 best=0.9266
+           router_load=[0.3454379141330719, 0.10138922929763794, 0.5528703331947327, 0.0003026332997251302]
+[step 0660/1000] method=baseline_cagrad loss=0.3344 train_acc=0.9060 train_loss=0.2479 val_acc=0.8865 val_loss=0.3108 router_H=0.3894 best=0.9266
+           router_load=[0.3454379141330719, 0.10138922929763794, 0.5528703331947327, 0.0003026332997251302]
+[step 0670/1000] method=baseline_cagrad loss=0.0467 train_acc=0.9060 train_loss=0.2479 val_acc=0.8865 val_loss=0.3108 router_H=0.3894 best=0.9266
+           router_load=[0.3454379141330719, 0.10138922929763794, 0.5528703331947327, 0.0003026332997251302]
+[step 0680/1000] method=baseline_cagrad loss=0.1290 train_acc=0.9060 train_loss=0.2479 val_acc=0.8865 val_loss=0.3108 router_H=0.3894 best=0.9266
+           router_load=[0.3454379141330719, 0.10138922929763794, 0.5528703331947327, 0.0003026332997251302]
+[step 0690/1000] method=baseline_cagrad loss=0.1755 train_acc=0.9060 train_loss=0.2479 val_acc=0.8865 val_loss=0.3108 router_H=0.3894 best=0.9266
+           router_load=[0.3454379141330719, 0.10138922929763794, 0.5528703331947327, 0.0003026332997251302]
+[step 0700/1000] method=baseline_cagrad loss=0.2830 train_acc=0.8806 train_loss=0.3417 val_acc=0.8601 val_loss=0.4140 router_H=0.3820 best=0.9266
+           router_load=[0.30747517943382263, 0.10778076946735382, 0.5846785306930542, 6.568922981387004e-05]
+[step 0710/1000] method=baseline_cagrad loss=0.0460 train_acc=0.8806 train_loss=0.3417 val_acc=0.8601 val_loss=0.4140 router_H=0.3820 best=0.9266
+           router_load=[0.30747517943382263, 0.10778076946735382, 0.5846785306930542, 6.568922981387004e-05]
+[step 0720/1000] method=baseline_cagrad loss=0.2391 train_acc=0.8806 train_loss=0.3417 val_acc=0.8601 val_loss=0.4140 router_H=0.3820 best=0.9266
+           router_load=[0.30747517943382263, 0.10778076946735382, 0.5846785306930542, 6.568922981387004e-05]
+[step 0730/1000] method=baseline_cagrad loss=0.2573 train_acc=0.8806 train_loss=0.3417 val_acc=0.8601 val_loss=0.4140 router_H=0.3820 best=0.9266
+           router_load=[0.30747517943382263, 0.10778076946735382, 0.5846785306930542, 6.568922981387004e-05]
+[step 0740/1000] method=baseline_cagrad loss=0.2359 train_acc=0.8806 train_loss=0.3417 val_acc=0.8601 val_loss=0.4140 router_H=0.3820 best=0.9266
+           router_load=[0.30747517943382263, 0.10778076946735382, 0.5846785306930542, 6.568922981387004e-05]
+[step 0750/1000] method=baseline_cagrad loss=0.1519 train_acc=0.9102 train_loss=0.2347 val_acc=0.9140 val_loss=0.2247 router_H=0.4355 best=0.9266
+           router_load=[0.41301700472831726, 0.13879895210266113, 0.44782936573028564, 0.0003548520617187023]
+[step 0760/1000] method=baseline_cagrad loss=0.2500 train_acc=0.9102 train_loss=0.2347 val_acc=0.9140 val_loss=0.2247 router_H=0.4355 best=0.9266
+           router_load=[0.41301700472831726, 0.13879895210266113, 0.44782936573028564, 0.0003548520617187023]
+[step 0770/1000] method=baseline_cagrad loss=0.3148 train_acc=0.9102 train_loss=0.2347 val_acc=0.9140 val_loss=0.2247 router_H=0.4355 best=0.9266
+           router_load=[0.41301700472831726, 0.13879895210266113, 0.44782936573028564, 0.0003548520617187023]
+[step 0780/1000] method=baseline_cagrad loss=0.0801 train_acc=0.9102 train_loss=0.2347 val_acc=0.9140 val_loss=0.2247 router_H=0.4355 best=0.9266
+           router_load=[0.41301700472831726, 0.13879895210266113, 0.44782936573028564, 0.0003548520617187023]
+[step 0790/1000] method=baseline_cagrad loss=0.5090 train_acc=0.9102 train_loss=0.2347 val_acc=0.9140 val_loss=0.2247 router_H=0.4355 best=0.9266
+           router_load=[0.41301700472831726, 0.13879895210266113, 0.44782936573028564, 0.0003548520617187023]
+[step 0800/1000] method=baseline_cagrad loss=0.0345 train_acc=0.9083 train_loss=0.2603 val_acc=0.9071 val_loss=0.2930 router_H=0.3743 best=0.9266
+           router_load=[0.39052581787109375, 0.08266007900238037, 0.5266120433807373, 0.00020211633818689734]
+[step 0810/1000] method=baseline_cagrad loss=0.2769 train_acc=0.9083 train_loss=0.2603 val_acc=0.9071 val_loss=0.2930 router_H=0.3743 best=0.9266
+           router_load=[0.39052581787109375, 0.08266007900238037, 0.5266120433807373, 0.00020211633818689734]
+[step 0820/1000] method=baseline_cagrad loss=0.1452 train_acc=0.9083 train_loss=0.2603 val_acc=0.9071 val_loss=0.2930 router_H=0.3743 best=0.9266
+           router_load=[0.39052581787109375, 0.08266007900238037, 0.5266120433807373, 0.00020211633818689734]
+[step 0830/1000] method=baseline_cagrad loss=0.0837 train_acc=0.9083 train_loss=0.2603 val_acc=0.9071 val_loss=0.2930 router_H=0.3743 best=0.9266
+           router_load=[0.39052581787109375, 0.08266007900238037, 0.5266120433807373, 0.00020211633818689734]
+[step 0840/1000] method=baseline_cagrad loss=0.3915 train_acc=0.9083 train_loss=0.2603 val_acc=0.9071 val_loss=0.2930 router_H=0.3743 best=0.9266
+           router_load=[0.39052581787109375, 0.08266007900238037, 0.5266120433807373, 0.00020211633818689734]
+[step 0850/1000] method=baseline_cagrad loss=0.1494 train_acc=0.9215 train_loss=0.2197 val_acc=0.9128 val_loss=0.2464 router_H=0.4005 best=0.9266
+           router_load=[0.44848546385765076, 0.08876252919435501, 0.46275195479393005, 0.0]
+[step 0860/1000] method=baseline_cagrad loss=0.1356 train_acc=0.9215 train_loss=0.2197 val_acc=0.9128 val_loss=0.2464 router_H=0.4005 best=0.9266
+           router_load=[0.44848546385765076, 0.08876252919435501, 0.46275195479393005, 0.0]
+[step 0870/1000] method=baseline_cagrad loss=0.6551 train_acc=0.9215 train_loss=0.2197 val_acc=0.9128 val_loss=0.2464 router_H=0.4005 best=0.9266
+           router_load=[0.44848546385765076, 0.08876252919435501, 0.46275195479393005, 0.0]
+[step 0880/1000] method=baseline_cagrad loss=0.0643 train_acc=0.9215 train_loss=0.2197 val_acc=0.9128 val_loss=0.2464 router_H=0.4005 best=0.9266
+           router_load=[0.44848546385765076, 0.08876252919435501, 0.46275195479393005, 0.0]
+[step 0890/1000] method=baseline_cagrad loss=0.1802 train_acc=0.9215 train_loss=0.2197 val_acc=0.9128 val_loss=0.2464 router_H=0.4005 best=0.9266
+           router_load=[0.44848546385765076, 0.08876252919435501, 0.46275195479393005, 0.0]
+[step 0900/1000] method=baseline_cagrad loss=0.0706 train_acc=0.9251 train_loss=0.2069 val_acc=0.9186 val_loss=0.2385 router_H=0.3757 best=0.9266
+           router_load=[0.46775493025779724, 0.08018970489501953, 0.4520552158355713, 0.0]
+[step 0910/1000] method=baseline_cagrad loss=0.4785 train_acc=0.9251 train_loss=0.2069 val_acc=0.9186 val_loss=0.2385 router_H=0.3757 best=0.9266
+           router_load=[0.46775493025779724, 0.08018970489501953, 0.4520552158355713, 0.0]
+[step 0920/1000] method=baseline_cagrad loss=0.5804 train_acc=0.9251 train_loss=0.2069 val_acc=0.9186 val_loss=0.2385 router_H=0.3757 best=0.9266
+           router_load=[0.46775493025779724, 0.08018970489501953, 0.4520552158355713, 0.0]
+[step 0930/1000] method=baseline_cagrad loss=0.2649 train_acc=0.9251 train_loss=0.2069 val_acc=0.9186 val_loss=0.2385 router_H=0.3757 best=0.9266
+           router_load=[0.46775493025779724, 0.08018970489501953, 0.4520552158355713, 0.0]
+[step 0940/1000] method=baseline_cagrad loss=0.1280 train_acc=0.9251 train_loss=0.2069 val_acc=0.9186 val_loss=0.2385 router_H=0.3757 best=0.9266
+           router_load=[0.46775493025779724, 0.08018970489501953, 0.4520552158355713, 0.0]
+[step 0950/1000] method=baseline_cagrad loss=0.5269 train_acc=0.9175 train_loss=0.2188 val_acc=0.9140 val_loss=0.2217 router_H=0.4421 best=0.9266
+           router_load=[0.43817538022994995, 0.09815873205661774, 0.46366602182388306, 0.0]
+[step 0960/1000] method=baseline_cagrad loss=0.2007 train_acc=0.9175 train_loss=0.2188 val_acc=0.9140 val_loss=0.2217 router_H=0.4421 best=0.9266
+           router_load=[0.43817538022994995, 0.09815873205661774, 0.46366602182388306, 0.0]
+[step 0970/1000] method=baseline_cagrad loss=0.5200 train_acc=0.9175 train_loss=0.2188 val_acc=0.9140 val_loss=0.2217 router_H=0.4421 best=0.9266
+           router_load=[0.43817538022994995, 0.09815873205661774, 0.46366602182388306, 0.0]
+[step 0980/1000] method=baseline_cagrad loss=0.5845 train_acc=0.9175 train_loss=0.2188 val_acc=0.9140 val_loss=0.2217 router_H=0.4421 best=0.9266
+           router_load=[0.43817538022994995, 0.09815873205661774, 0.46366602182388306, 0.0]
+[step 0990/1000] method=baseline_cagrad loss=0.0336 train_acc=0.9175 train_loss=0.2188 val_acc=0.9140 val_loss=0.2217 router_H=0.4421 best=0.9266
+           router_load=[0.43817538022994995, 0.09815873205661774, 0.46366602182388306, 0.0]
+[step 1000/1000] method=baseline_cagrad loss=0.0948 train_acc=0.9203 train_loss=0.2176 val_acc=0.9094 val_loss=0.2574 router_H=0.4229 best=0.9266
+           router_load=[0.4822825491428375, 0.0629100501537323, 0.45480749011039734, 0.0]
+saved summary -> /home/zhujjing/MOE-grad-conflict-routing/runs/paper_suite/single_gpu/single_task/roberta_sst2_ffn_e4_k2/final/cagrad_s2.json
+saved curve -> /home/zhujjing/MOE-grad-conflict-routing/runs/paper_suite/single_gpu/single_task/roberta_sst2_ffn_e4_k2/final/cagrad_s2_curve.csv

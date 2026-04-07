@@ -1,0 +1,81 @@
+[run] method=baseline candidate=coord_01_anchor seed=2 steps=150 gpu=0
+[run] cmd=
+/home/zhujjing/anaconda3/bin/python /home/zhujjing/MOE-grad-conflict-routing/scripts/run.py --config configs/singletask_sst2_real.yaml --set model.backbone_backend=hf --set model.hf_load_pretrained=true --set model.hf_local_files_only=true --set model.backbone=deberta --set model.hf_pretrained_name=microsoft/deberta-v3-base --set model.expert_type=lora --set model.routing_mode=topk --set model.num_experts=4 --set model.top_k=2 --set seed=2 --set method.name=baseline_avg --set train.steps=150 --set train.eval_every_steps=50 --set train.grad_clip=1 --set train.lr=2e-05 --set train.weight_decay=0.01 --out /home/zhujjing/MOE-grad-conflict-routing/runs/paper_suite/single_gpu/single_task/deberta_sst2_lora_e4_k2_supplement/hpo/baseline/trial_runs/coord_01_anchor/baseline_s2.json --curve_out /home/zhujjing/MOE-grad-conflict-routing/runs/paper_suite/single_gpu/single_task/deberta_sst2_lora_e4_k2_supplement/hpo/baseline/trial_runs/coord_01_anchor/baseline_s2_curve.csv
+Using the latest cached version of the dataset since glue couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'sst2' at /home/zhujjing/hf_cache/datasets/glue/sst2/0.0.0/bcdcba79d07bc864c1c254ccfcedcce55bcc9a8c (last modified on Thu Mar 19 15:01:41 2026).
+Could not extract SentencePiece model from /home/zhujjing/hf_cache/transformers/models--microsoft--deberta-v3-base/snapshots/8ccc9b6f36199bec6961081d44eb72fb3f7353f3/spm.model using sentencepiece library due to 
+SentencePieceExtractor requires the SentencePiece library but it was not found in your environment. Check out the instructions on the
+installation page of its repo: https://github.com/google/sentencepiece#installation and follow the ones
+that match your environment. Please note that you may need to restart your runtime after installation.
+. Falling back to TikToken extractor.
+Traceback (most recent call last):
+  File "/home/zhujjing/anaconda3/lib/python3.13/site-packages/transformers/tokenization_utils_tokenizers.py", line 195, in convert_to_native_format
+    extractor = SentencePieceExtractor(vocab_file)
+  File "/home/zhujjing/anaconda3/lib/python3.13/site-packages/transformers/convert_slow_tokenizer.py", line 152, in __init__
+    requires_backends(self, "sentencepiece")
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhujjing/anaconda3/lib/python3.13/site-packages/transformers/utils/import_utils.py", line 1930, in requires_backends
+    raise ImportError("".join(failed))
+ImportError: 
+SentencePieceExtractor requires the SentencePiece library but it was not found in your environment. Check out the instructions on the
+installation page of its repo: https://github.com/google/sentencepiece#installation and follow the ones
+that match your environment. Please note that you may need to restart your runtime after installation.
+
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/zhujjing/anaconda3/lib/python3.13/site-packages/transformers/convert_slow_tokenizer.py", line 1898, in extract_vocab_merges_from_model
+    from tiktoken.load import load_tiktoken_bpe
+ModuleNotFoundError: No module named 'tiktoken'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/zhujjing/MOE-grad-conflict-routing/scripts/run.py", line 104, in <module>
+    main()
+    ~~~~^^
+  File "/home/zhujjing/MOE-grad-conflict-routing/scripts/run.py", line 64, in main
+    data = build_multitask_data(cfg)
+  File "/home/zhujjing/MOE-grad-conflict-routing/src/moe_gc/data.py", line 730, in build_multitask_data
+    return build_glue_multitask(cfg)
+  File "/home/zhujjing/MOE-grad-conflict-routing/src/moe_gc/data.py", line 408, in build_glue_multitask
+    tr_loader, va_loader, nlab, task_repro = _build_glue_task_loader(task_name=name, cfg=cfg)
+                                             ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhujjing/MOE-grad-conflict-routing/src/moe_gc/data.py", line 315, in _build_glue_task_loader
+    tok, tok_name = _build_hf_tokenizer(mcfg)
+                    ~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/zhujjing/MOE-grad-conflict-routing/src/moe_gc/data.py", line 239, in _build_hf_tokenizer
+    tok = AutoTokenizer.from_pretrained(
+        tok_name,
+        local_files_only=bool(model_cfg.get("hf_local_files_only", False)),
+        use_fast=True,
+    )
+  File "/home/zhujjing/anaconda3/lib/python3.13/site-packages/transformers/models/auto/tokenization_auto.py", line 773, in from_pretrained
+    return tokenizer_class.from_pretrained(pretrained_model_name_or_path, *inputs, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhujjing/anaconda3/lib/python3.13/site-packages/transformers/tokenization_utils_base.py", line 1721, in from_pretrained
+    return cls._from_pretrained(
+           ~~~~~~~~~~~~~~~~~~~~^
+        resolved_vocab_files,
+        ^^^^^^^^^^^^^^^^^^^^^
+    ...<9 lines>...
+        **kwargs,
+        ^^^^^^^^^
+    )
+    ^
+  File "/home/zhujjing/anaconda3/lib/python3.13/site-packages/transformers/tokenization_utils_base.py", line 1907, in _from_pretrained
+    init_kwargs = cls.convert_to_native_format(**init_kwargs)
+  File "/home/zhujjing/anaconda3/lib/python3.13/site-packages/transformers/tokenization_utils_tokenizers.py", line 248, in convert_to_native_format
+    local_kwargs["tokenizer_object"] = converter.converted()
+                                       ~~~~~~~~~~~~~~~~~~~^^
+  File "/home/zhujjing/anaconda3/lib/python3.13/site-packages/transformers/convert_slow_tokenizer.py", line 1935, in converted
+    tokenizer = self.tokenizer()
+  File "/home/zhujjing/anaconda3/lib/python3.13/site-packages/transformers/convert_slow_tokenizer.py", line 1928, in tokenizer
+    vocab_scores, merges = self.extract_vocab_merges_from_model(self.vocab_file)
+                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/zhujjing/anaconda3/lib/python3.13/site-packages/transformers/convert_slow_tokenizer.py", line 1900, in extract_vocab_merges_from_model
+    raise ValueError(
+        "`tiktoken` is required to read a `tiktoken` file. Install it with `pip install tiktoken`."
+    )
+ValueError: `tiktoken` is required to read a `tiktoken` file. Install it with `pip install tiktoken`.

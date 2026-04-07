@@ -1,0 +1,38 @@
+[run] method=baseline candidate=coord_03_train_grad_clip_016 seed=2 steps=150 gpu=0
+[run] cmd=
+/home/zhujjing/anaconda3/envs/moe/bin/python /home/zhujjing/MOE-grad-conflict-routing/scripts/run.py --config configs/singletask_sst2_real.yaml --set model.backbone_backend=hf --set model.hf_load_pretrained=true --set model.hf_local_files_only=true --set model.backbone=deberta --set model.hf_pretrained_name=microsoft/deberta-v3-base --set model.expert_type=lora --set model.routing_mode=topk --set model.num_experts=4 --set model.top_k=2 --set seed=2 --set method.name=baseline_avg --set train.steps=150 --set train.eval_every_steps=50 --set train.grad_clip=1.261600779 --set train.lr=3.07386945e-05 --set train.weight_decay=0.01 --out /home/zhujjing/MOE-grad-conflict-routing/runs/paper_suite/single_gpu/single_task/deberta_sst2_lora_e4_k2_supplement/hpo/baseline/trial_runs/coord_03_train_grad_clip_016/baseline_s2.json --curve_out /home/zhujjing/MOE-grad-conflict-routing/runs/paper_suite/single_gpu/single_task/deberta_sst2_lora_e4_k2_supplement/hpo/baseline/trial_runs/coord_03_train_grad_clip_016/baseline_s2_curve.csv
+Using the latest cached version of the dataset since glue couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'sst2' at /home/zhujjing/hf_cache/datasets/glue/sst2/0.0.0/bcdcba79d07bc864c1c254ccfcedcce55bcc9a8c (last modified on Thu Mar 19 15:01:41 2026).
+/home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/transformers/utils/hub.py:124: FutureWarning: Using `TRANSFORMERS_CACHE` is deprecated and will be removed in v5 of Transformers. Use `HF_HOME` instead.
+  warnings.warn(
+/home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/transformers/convert_slow_tokenizer.py:560: UserWarning: The sentencepiece tokenizer that you are converting to a fast tokenizer uses the byte fallback option which is not implemented in the fast tokenizers. In practice this means that the fast version of the tokenizer can produce unknown tokens whereas the sentencepiece version would have converted these unknown tokens into a sequence of byte tokens matching the original piece of text.
+  warnings.warn(
+[step 0001/150] method=baseline_avg loss=0.9236 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0010/150] method=baseline_avg loss=0.7754 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0020/150] method=baseline_avg loss=0.4616 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0030/150] method=baseline_avg loss=0.5366 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0040/150] method=baseline_avg loss=0.0826 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0050/150] method=baseline_avg loss=0.3130 train_acc=0.8852 train_loss=0.3484 val_acc=0.8452 val_loss=0.4283 router_H=0.6822 best=0.8452
+           router_load=[0.39349740743637085, 0.41904330253601074, 0.020544197410345078, 0.16691525280475616]
+[step 0060/150] method=baseline_avg loss=0.3746 train_acc=0.8852 train_loss=0.3484 val_acc=0.8452 val_loss=0.4283 router_H=0.6822 best=0.8452
+           router_load=[0.39349740743637085, 0.41904330253601074, 0.020544197410345078, 0.16691525280475616]
+[step 0070/150] method=baseline_avg loss=0.5208 train_acc=0.8852 train_loss=0.3484 val_acc=0.8452 val_loss=0.4283 router_H=0.6822 best=0.8452
+           router_load=[0.39349740743637085, 0.41904330253601074, 0.020544197410345078, 0.16691525280475616]
+[step 0080/150] method=baseline_avg loss=0.2689 train_acc=0.8852 train_loss=0.3484 val_acc=0.8452 val_loss=0.4283 router_H=0.6822 best=0.8452
+           router_load=[0.39349740743637085, 0.41904330253601074, 0.020544197410345078, 0.16691525280475616]
+[step 0090/150] method=baseline_avg loss=0.2525 train_acc=0.8852 train_loss=0.3484 val_acc=0.8452 val_loss=0.4283 router_H=0.6822 best=0.8452
+           router_load=[0.39349740743637085, 0.41904330253601074, 0.020544197410345078, 0.16691525280475616]
+[step 0100/150] method=baseline_avg loss=0.1430 train_acc=0.9127 train_loss=0.2824 val_acc=0.9025 val_loss=0.3216 router_H=0.6683 best=0.9025
+           router_load=[0.25654664635658264, 0.5378649234771729, 0.023034242913126945, 0.18255406618118286]
+[step 0110/150] method=baseline_avg loss=0.1202 train_acc=0.9127 train_loss=0.2824 val_acc=0.9025 val_loss=0.3216 router_H=0.6683 best=0.9025
+           router_load=[0.25654664635658264, 0.5378649234771729, 0.023034242913126945, 0.18255406618118286]
+[step 0120/150] method=baseline_avg loss=0.2803 train_acc=0.9127 train_loss=0.2824 val_acc=0.9025 val_loss=0.3216 router_H=0.6683 best=0.9025
+           router_load=[0.25654664635658264, 0.5378649234771729, 0.023034242913126945, 0.18255406618118286]
+[step 0130/150] method=baseline_avg loss=0.2943 train_acc=0.9127 train_loss=0.2824 val_acc=0.9025 val_loss=0.3216 router_H=0.6683 best=0.9025
+           router_load=[0.25654664635658264, 0.5378649234771729, 0.023034242913126945, 0.18255406618118286]
+[step 0140/150] method=baseline_avg loss=0.2706 train_acc=0.9127 train_loss=0.2824 val_acc=0.9025 val_loss=0.3216 router_H=0.6683 best=0.9025
+           router_load=[0.25654664635658264, 0.5378649234771729, 0.023034242913126945, 0.18255406618118286]
+[step 0150/150] method=baseline_avg loss=0.3769 train_acc=0.9172 train_loss=0.2425 val_acc=0.9117 val_loss=0.2889 router_H=0.6871 best=0.9117
+           router_load=[0.17172792553901672, 0.46886301040649414, 0.030023010447621346, 0.3293859362602234]
+saved summary -> /home/zhujjing/MOE-grad-conflict-routing/runs/paper_suite/single_gpu/single_task/deberta_sst2_lora_e4_k2_supplement/hpo/baseline/trial_runs/coord_03_train_grad_clip_016/baseline_s2.json
+saved curve -> /home/zhujjing/MOE-grad-conflict-routing/runs/paper_suite/single_gpu/single_task/deberta_sst2_lora_e4_k2_supplement/hpo/baseline/trial_runs/coord_03_train_grad_clip_016/baseline_s2_curve.csv

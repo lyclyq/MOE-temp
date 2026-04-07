@@ -1,0 +1,25 @@
+[probe] phase=ours:coord:train.lr gpu=0
+[probe] cmd=
+/home/zhujjing/anaconda3/envs/moe/bin/python /home/zhujjing/MOE-grad-conflict-routing/scripts/run.py --config configs/multitask_glue3_rte_mrpc_cola_real.yaml --set model.backbone_backend=hf --set model.hf_load_pretrained=true --set model.hf_local_files_only=true --set model.backbone=gpt2 --set model.hf_pretrained_name=gpt2-medium --set model.expert_type=lora --set model.routing_mode=topk --set model.num_experts=4 --set model.top_k=2 --set train.eval_train_fraction=0.10 --set train.eval_train_max_batches=-1 --set train.eval_max_batches=-1 --set seed=2 --set method.name=ours --set train.steps=100 --set train.eval_every_steps=0 --set method.ours.use_load_norm=true --set method.ours.lambda_align=0.001 --set train.grad_clip=1 --set train.lr=2e-05 --set train.weight_decay=0.01 --out /tmp/moe_probe_3fd9l0fy/probe_summary.json --curve_out /tmp/moe_probe_3fd9l0fy/probe_curve.csv
+Using the latest cached version of the dataset since glue couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'rte' at /home/zhujjing/hf_cache/datasets/glue/rte/0.0.0/bcdcba79d07bc864c1c254ccfcedcce55bcc9a8c (last modified on Thu Mar 19 15:00:36 2026).
+/home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/transformers/utils/hub.py:124: FutureWarning: Using `TRANSFORMERS_CACHE` is deprecated and will be removed in v5 of Transformers. Use `HF_HOME` instead.
+  warnings.warn(
+Using the latest cached version of the dataset since glue couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'mrpc' at /home/zhujjing/hf_cache/datasets/glue/mrpc/0.0.0/bcdcba79d07bc864c1c254ccfcedcce55bcc9a8c (last modified on Thu Mar 19 15:01:06 2026).
+Using the latest cached version of the dataset since glue couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'cola' at /home/zhujjing/hf_cache/datasets/glue/cola/0.0.0/bcdcba79d07bc864c1c254ccfcedcce55bcc9a8c (last modified on Thu Mar 19 15:02:09 2026).
+[step 0001/100] method=ours loss=3.9890 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0010/100] method=ours loss=0.7865 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0020/100] method=ours loss=0.7945 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0030/100] method=ours loss=0.7579 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0040/100] method=ours loss=1.1863 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0050/100] method=ours loss=0.8409 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0060/100] method=ours loss=0.7366 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0070/100] method=ours loss=0.5515 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0080/100] method=ours loss=0.7021 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0090/100] method=ours loss=0.7609 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0100/100] method=ours loss=0.7767 train_acc=0.6433 train_loss=0.6216 val_acc=0.6729 val_loss=0.6126 router_H=0.5676 best=0.6729
+           router_load=[0.12055107951164246, 0.1867162138223648, 0.6304516196250916, 0.062280770391225815]
+saved summary -> /tmp/moe_probe_3fd9l0fy/probe_summary.json
+saved curve -> /tmp/moe_probe_3fd9l0fy/probe_curve.csv

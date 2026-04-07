@@ -1,0 +1,368 @@
+{
+  "batch_semantics": {
+    "batch_hpo_semantics": "train.batch_size is the per-task effective batch size; total samples per update equals num_tasks * train.batch_size.",
+    "configured_effective_batch_per_task": 8,
+    "configured_effective_update_samples": 32,
+    "device_transfer_semantics": "GPU staging chunks are only outer transport groups of whole logical micro-batches; they do not redefine vote partitioning or the effective update batch.",
+    "gpu_streaming_chunk_size": 8,
+    "logical_micro_batch_size": 4,
+    "num_tasks_per_update": 4
+  },
+  "best_val_acc": 0.9223863636363636,
+  "cli_overrides": [
+    "model.backbone_backend=hf",
+    "model.hf_load_pretrained=true",
+    "model.hf_local_files_only=true",
+    "model.routing_mode=topk",
+    "model.expert_type=lora",
+    "model.num_experts=4",
+    "model.top_k=2",
+    "data.train_size=20000",
+    "data.val_size=4000",
+    "model.backbone=roberta",
+    "model.hf_pretrained_name=roberta-base",
+    "train.eval_val_fraction=0.2",
+    "train.skip_train_eval=true",
+    "seed=2",
+    "method.name=ours",
+    "train.steps=200",
+    "train.eval_every_steps=100",
+    "method.ours.use_load_norm=true",
+    "method.ours.lambda_align=0.000425574086",
+    "train.grad_clip=0.7",
+    "train.lr=1.2775892e-05",
+    "train.weight_decay=0.006765903978"
+  ],
+  "config_path": "configs/multitask_textcls_local_sst2_imdb_yelp_amazon_real.yaml",
+  "config_path_resolved": "/root/Optimization/MOE-grad-conflict-routing-appendix2/configs/multitask_textcls_local_sst2_imdb_yelp_amazon_real.yaml",
+  "data_reproducibility": {
+    "data_source": "textcls",
+    "global_seed": 2,
+    "loader_seed_base": 2035,
+    "task_order": [
+      "local_textcls/glue_sst2",
+      "local_textcls/imdb",
+      "local_textcls/yelp_polarity",
+      "local_textcls/amazon_polarity"
+    ],
+    "tasks": {
+      "local_textcls/amazon_polarity": {
+        "dataset": "local_textcls",
+        "num_labels": 2,
+        "subset": "amazon_polarity",
+        "task": "local_textcls/amazon_polarity",
+        "tokenizer_name": "roberta-base",
+        "train_loader_shuffle_seed": 25107450,
+        "train_size": 20000,
+        "train_split": "train",
+        "val_loader_shuffle_seed": 25107451,
+        "val_size": 4000,
+        "val_split": "test"
+      },
+      "local_textcls/glue_sst2": {
+        "dataset": "local_textcls",
+        "num_labels": 2,
+        "subset": "glue_sst2",
+        "task": "local_textcls/glue_sst2",
+        "tokenizer_name": "roberta-base",
+        "train_loader_shuffle_seed": 19332795,
+        "train_size": 20000,
+        "train_split": "train",
+        "val_loader_shuffle_seed": 19332796,
+        "val_size": 872,
+        "val_split": "validation"
+      },
+      "local_textcls/imdb": {
+        "dataset": "local_textcls",
+        "num_labels": 2,
+        "subset": "imdb",
+        "task": "local_textcls/imdb",
+        "tokenizer_name": "roberta-base",
+        "train_loader_shuffle_seed": 15171767,
+        "train_size": 20000,
+        "train_split": "train",
+        "val_loader_shuffle_seed": 15171768,
+        "val_size": 4000,
+        "val_split": "test"
+      },
+      "local_textcls/yelp_polarity": {
+        "dataset": "local_textcls",
+        "num_labels": 2,
+        "subset": "yelp_polarity",
+        "task": "local_textcls/yelp_polarity",
+        "tokenizer_name": "roberta-base",
+        "train_loader_shuffle_seed": 23436486,
+        "train_size": 20000,
+        "train_split": "train",
+        "val_loader_shuffle_seed": 23436487,
+        "val_size": 4000,
+        "val_split": "test"
+      }
+    }
+  },
+  "final_diagnostics": {
+    "avg_intra_expert_coherence": 0.16618073644072587,
+    "expert_diversity": [
+      0.8437345860549588,
+      0.7507873365734865,
+      0.7007195754092327,
+      0.64565997482174
+    ],
+    "expert_names": [
+      "e0",
+      "e1",
+      "e2",
+      "e3"
+    ],
+    "expert_purity": [
+      0.48006945848464966,
+      0.4500483274459839,
+      0.546960711479187,
+      0.4775042235851288
+    ],
+    "inter_expert_similarity": 0.19071013632226322,
+    "inter_expert_similarity_matrix": [
+      [
+        1.0,
+        0.27430101637090687,
+        0.14123204917287904,
+        0.5312543208421653
+      ],
+      [
+        0.27430101637090687,
+        1.0,
+        0.20824673622492762,
+        0.17529612318842275
+      ],
+      [
+        0.14123204917287904,
+        0.20824673622492762,
+        1.0,
+        -0.18606942786572217
+      ],
+      [
+        0.5312543208421653,
+        0.17529612318842275,
+        -0.18606942786572217,
+        1.0
+      ]
+    ],
+    "intra_expert_coherence": [
+      -0.15068895690692174,
+      0.4638743643247039,
+      -0.08853812992875752,
+      0.44007566827387884
+    ],
+    "overall_task_conflict_cos": -0.1342963942195967,
+    "task_conflict_matrix": [
+      [
+        1.0,
+        0.3391911905731732,
+        -0.09578863782390547,
+        -0.2776597294485396
+      ],
+      [
+        0.3391911905731732,
+        1.0,
+        -0.40513768368469405,
+        -0.5747656715491091
+      ],
+      [
+        -0.09578863782390547,
+        -0.40513768368469405,
+        1.0,
+        0.20838216661549483
+      ],
+      [
+        -0.2776597294485396,
+        -0.5747656715491091,
+        0.20838216661549483,
+        1.0
+      ]
+    ],
+    "task_grad_norm_cv": 0.6276288258307001,
+    "task_grad_norms": [
+      58.13895034790039,
+      56.38166809082031,
+      1.4448797702789307,
+      30.885419845581055
+    ],
+    "task_names": [
+      "local_textcls/glue_sst2",
+      "local_textcls/imdb",
+      "local_textcls/yelp_polarity",
+      "local_textcls/amazon_polarity"
+    ]
+  },
+  "final_step_metrics": {
+    "alignment_reward": 0.044119108468294144,
+    "avg_intra_expert_coherence": 0.16618073644072587,
+    "expert_diversity_e0": 0.8437345860549588,
+    "expert_diversity_e1": 0.7507873365734865,
+    "expert_diversity_e2": 0.7007195754092327,
+    "expert_diversity_e3": 0.64565997482174,
+    "expert_diversity_mean": 0.7352253682148545,
+    "expert_purity_e0": 0.48006945848464966,
+    "expert_purity_e1": 0.4500483274459839,
+    "expert_purity_e2": 0.546960711479187,
+    "expert_purity_e3": 0.4775042235851288,
+    "expert_purity_mean": 0.48864568024873734,
+    "inter_expert_similarity": 0.19071013632226322,
+    "inter_expert_similarity_e0_e0": 1.0,
+    "inter_expert_similarity_e0_e1": 0.27430101637090687,
+    "inter_expert_similarity_e0_e2": 0.14123204917287904,
+    "inter_expert_similarity_e0_e3": 0.5312543208421653,
+    "inter_expert_similarity_e1_e0": 0.27430101637090687,
+    "inter_expert_similarity_e1_e1": 1.0,
+    "inter_expert_similarity_e1_e2": 0.20824673622492762,
+    "inter_expert_similarity_e1_e3": 0.17529612318842275,
+    "inter_expert_similarity_e2_e0": 0.14123204917287904,
+    "inter_expert_similarity_e2_e1": 0.20824673622492762,
+    "inter_expert_similarity_e2_e2": 1.0,
+    "inter_expert_similarity_e2_e3": -0.18606942786572217,
+    "inter_expert_similarity_e3_e0": 0.5312543208421653,
+    "inter_expert_similarity_e3_e1": 0.17529612318842275,
+    "inter_expert_similarity_e3_e2": -0.18606942786572217,
+    "inter_expert_similarity_e3_e3": 1.0,
+    "intra_expert_coherence_e0": -0.15068895690692174,
+    "intra_expert_coherence_e1": 0.4638743643247039,
+    "intra_expert_coherence_e2": -0.08853812992875752,
+    "intra_expert_coherence_e3": 0.44007566827387884,
+    "l_conflict": -0.044119108468294144,
+    "l_conflict_e0": -0.002207445213571191,
+    "l_conflict_e1": -0.003130951663479209,
+    "l_conflict_e2": -0.014030865393579006,
+    "l_conflict_e3": -0.024749845266342163,
+    "load_cv": 0.4370223804738975,
+    "load_max_min_ratio": 3.1435683379081136,
+    "overall_task_conflict_cos": -0.1342963942195967,
+    "router_conflict_grad_l2": 0.0,
+    "router_entropy": 0.688488423916864,
+    "router_load_e0": 0.3966386616230011,
+    "router_load_e1": 0.126174658536911,
+    "router_load_e2": 0.1656162589788437,
+    "router_load_e3": 0.31157031655311584,
+    "step": 200.0,
+    "task_acc__local_textcls_amazon_polarity": 0.9425,
+    "task_acc__local_textcls_glue_sst2": 0.8920454545454546,
+    "task_acc__local_textcls_imdb": 0.92,
+    "task_acc__local_textcls_yelp_polarity": 0.935,
+    "task_conflict_t0_t0": 1.0,
+    "task_conflict_t0_t1": 0.3391911905731732,
+    "task_conflict_t0_t2": -0.09578863782390547,
+    "task_conflict_t0_t3": -0.2776597294485396,
+    "task_conflict_t1_t0": 0.3391911905731732,
+    "task_conflict_t1_t1": 1.0,
+    "task_conflict_t1_t2": -0.40513768368469405,
+    "task_conflict_t1_t3": -0.5747656715491091,
+    "task_conflict_t2_t0": -0.09578863782390547,
+    "task_conflict_t2_t1": -0.40513768368469405,
+    "task_conflict_t2_t2": 1.0,
+    "task_conflict_t2_t3": 0.20838216661549483,
+    "task_conflict_t3_t0": -0.2776597294485396,
+    "task_conflict_t3_t1": -0.5747656715491091,
+    "task_conflict_t3_t2": 0.20838216661549483,
+    "task_conflict_t3_t3": 1.0,
+    "task_grad_norm_cv": 0.6276288258307001,
+    "task_loss__local_textcls_amazon_polarity": 0.15746881632134319,
+    "task_loss__local_textcls_glue_sst2": 0.28011416061781347,
+    "task_loss__local_textcls_imdb": 0.20153616167604924,
+    "task_loss__local_textcls_yelp_polarity": 0.19344378425972536,
+    "train_acc": NaN,
+    "train_loss": NaN,
+    "train_step_loss": 0.16905496013350785,
+    "utilization_ratio": 1.0,
+    "val_acc": 0.9223863636363636,
+    "val_loss": 0.2081407307187328
+  },
+  "final_val_acc": 0.9223863636363636,
+  "method": "ours",
+  "num_eval_points": 2,
+  "overhead": {
+    "mean_train_step_time_sec": 1.1156576618971303,
+    "peak_cuda_memory_mb": 2407.818359375,
+    "wall_time_sec": 369.7840023939498
+  },
+  "reproducibility": {
+    "command": "/root/Optimization/MOE-grad-conflict-routing-appendix2/scripts/run.py --config configs/multitask_textcls_local_sst2_imdb_yelp_amazon_real.yaml --set model.backbone_backend=hf --set model.hf_load_pretrained=true --set model.hf_local_files_only=true --set model.routing_mode=topk --set model.expert_type=lora --set model.num_experts=4 --set model.top_k=2 --set data.train_size=20000 --set data.val_size=4000 --set model.backbone=roberta --set model.hf_pretrained_name=roberta-base --set train.eval_val_fraction=0.2 --set train.skip_train_eval=true --set seed=2 --set method.name=ours --set train.steps=200 --set train.eval_every_steps=100 --set method.ours.use_load_norm=true --set method.ours.lambda_align=0.000425574086 --set train.grad_clip=0.7 --set train.lr=1.2775892e-05 --set train.weight_decay=0.006765903978 --out /root/Optimization/MOE-grad-conflict-routing-appendix2/runs/paper_suite_supplement/appendix/multi_dataset_real/roberta_lora_e4_k2_sst2_imdb_yelp_amazon/_method_workers/ours/hpo/ours/trial_runs/local_var_topk_000/ours_s2.json --curve_out /root/Optimization/MOE-grad-conflict-routing-appendix2/runs/paper_suite_supplement/appendix/multi_dataset_real/roberta_lora_e4_k2_sst2_imdb_yelp_amazon/_method_workers/ours/hpo/ours/trial_runs/local_var_topk_000/ours_s2_curve.csv",
+    "curve_path": "/root/Optimization/MOE-grad-conflict-routing-appendix2/runs/paper_suite_supplement/appendix/multi_dataset_real/roberta_lora_e4_k2_sst2_imdb_yelp_amazon/_method_workers/ours/hpo/ours/trial_runs/local_var_topk_000/ours_s2_curve.csv",
+    "cwd": "/root/Optimization/MOE-grad-conflict-routing-appendix2",
+    "runtime": {
+      "cuda_available": true,
+      "cuda_device_count": 1,
+      "cuda_device_names": [
+        "NVIDIA RTX PRO 6000 Blackwell Server Edition"
+      ],
+      "platform": "Linux-5.15.0-139-generic-x86_64-with-glibc2.35",
+      "python_version": "3.10.20",
+      "torch_version": "2.10.0+cu128"
+    },
+    "summary_path": "/root/Optimization/MOE-grad-conflict-routing-appendix2/runs/paper_suite_supplement/appendix/multi_dataset_real/roberta_lora_e4_k2_sst2_imdb_yelp_amazon/_method_workers/ours/hpo/ours/trial_runs/local_var_topk_000/ours_s2.json"
+  },
+  "resolved_config": {
+    "data": {
+      "datasets": [
+        "local_textcls/glue_sst2",
+        "local_textcls/imdb",
+        "local_textcls/yelp_polarity",
+        "local_textcls/amazon_polarity"
+      ],
+      "local_dataset_root": "local_datasets/textcls",
+      "source": "textcls",
+      "train_size": 20000,
+      "val_size": 4000
+    },
+    "method": {
+      "baseline_cagrad": {
+        "c": 0.4,
+        "eps": 1e-08,
+        "inner_lr": 0.1,
+        "inner_steps": 10
+      },
+      "name": "ours",
+      "ours": {
+        "eps": 1e-08,
+        "lambda_align": 0.000425574086,
+        "micro_batch_size": 8,
+        "use_load_norm": true
+      }
+    },
+    "model": {
+      "backbone": "roberta",
+      "backbone_backend": "hf",
+      "dropout": 0.1,
+      "expert_type": "lora",
+      "ffn_hidden_dim": 3072,
+      "hf_load_pretrained": true,
+      "hf_local_files_only": true,
+      "hf_pretrained_name": "roberta-base",
+      "hidden_dim": 768,
+      "lora_alpha": 16.0,
+      "lora_rank": 16,
+      "max_seq_len": 128,
+      "num_classes": 2,
+      "num_experts": 4,
+      "routing_mode": "topk",
+      "seq_len": 128,
+      "top_k": 2,
+      "vocab_size": 30522
+    },
+    "seed": 2,
+    "train": {
+      "batch_size": 8,
+      "device_batch_size": 0,
+      "eval_every_steps": 100,
+      "eval_max_batches": 0,
+      "eval_val_fraction": 0.2,
+      "grad_clip": 0.7,
+      "log_every": 10,
+      "lr": 1.2775892e-05,
+      "micro_batch_size": 4,
+      "skip_train_eval": true,
+      "steps": 200,
+      "weight_decay": 0.006765903978
+    }
+  },
+  "resolved_config_sha256": "3d869c0456ab0e5e65e93c4d0187766f3abeee9dd8456cf54b27a3270e63fde4",
+  "seed": 2
+}

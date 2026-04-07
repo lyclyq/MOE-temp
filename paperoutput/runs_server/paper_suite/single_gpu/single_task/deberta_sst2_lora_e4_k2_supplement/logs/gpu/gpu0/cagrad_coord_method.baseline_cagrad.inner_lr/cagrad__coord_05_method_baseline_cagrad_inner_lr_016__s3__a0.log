@@ -1,0 +1,38 @@
+[run] method=cagrad candidate=coord_05_method_baseline_cagrad_inner_lr_016 seed=3 steps=150 gpu=0
+[run] cmd=
+/home/zhujjing/anaconda3/envs/moe/bin/python /home/zhujjing/MOE-grad-conflict-routing/scripts/run.py --config configs/singletask_sst2_real.yaml --set model.backbone_backend=hf --set model.hf_load_pretrained=true --set model.hf_local_files_only=true --set model.backbone=deberta --set model.hf_pretrained_name=microsoft/deberta-v3-base --set model.expert_type=lora --set model.routing_mode=topk --set model.num_experts=4 --set model.top_k=2 --set seed=3 --set method.name=baseline_cagrad --set train.steps=150 --set train.eval_every_steps=50 --set method.baseline_cagrad.c=0.69392653 --set method.baseline_cagrad.inner_lr=0.03125195703 --set train.grad_clip=1.888120198 --set train.lr=2e-05 --set train.weight_decay=0.04430050278 --out /home/zhujjing/MOE-grad-conflict-routing/runs/paper_suite/single_gpu/single_task/deberta_sst2_lora_e4_k2_supplement/hpo/cagrad/trial_runs/coord_05_method_baseline_cagrad_inner_lr_016/cagrad_s3.json --curve_out /home/zhujjing/MOE-grad-conflict-routing/runs/paper_suite/single_gpu/single_task/deberta_sst2_lora_e4_k2_supplement/hpo/cagrad/trial_runs/coord_05_method_baseline_cagrad_inner_lr_016/cagrad_s3_curve.csv
+Using the latest cached version of the dataset since glue couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'sst2' at /home/zhujjing/hf_cache/datasets/glue/sst2/0.0.0/bcdcba79d07bc864c1c254ccfcedcce55bcc9a8c (last modified on Thu Mar 19 15:01:41 2026).
+/home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/transformers/utils/hub.py:124: FutureWarning: Using `TRANSFORMERS_CACHE` is deprecated and will be removed in v5 of Transformers. Use `HF_HOME` instead.
+  warnings.warn(
+/home/zhujjing/anaconda3/envs/moe/lib/python3.10/site-packages/transformers/convert_slow_tokenizer.py:560: UserWarning: The sentencepiece tokenizer that you are converting to a fast tokenizer uses the byte fallback option which is not implemented in the fast tokenizers. In practice this means that the fast version of the tokenizer can produce unknown tokens whereas the sentencepiece version would have converted these unknown tokens into a sequence of byte tokens matching the original piece of text.
+  warnings.warn(
+[step 0001/150] method=baseline_cagrad loss=0.5842 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0010/150] method=baseline_cagrad loss=0.5953 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0020/150] method=baseline_cagrad loss=0.4607 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0030/150] method=baseline_cagrad loss=0.5379 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0040/150] method=baseline_cagrad loss=0.5647 train_acc=nan train_loss=nan val_acc=nan val_loss=nan best=-1.0000
+[step 0050/150] method=baseline_cagrad loss=0.5030 train_acc=0.8962 train_loss=0.2728 val_acc=0.9071 val_loss=0.2468 router_H=0.6659 best=0.9071
+           router_load=[0.3961149752140045, 0.36266589164733887, 0.12713494896888733, 0.11408428847789764]
+[step 0060/150] method=baseline_cagrad loss=0.5245 train_acc=0.8962 train_loss=0.2728 val_acc=0.9071 val_loss=0.2468 router_H=0.6659 best=0.9071
+           router_load=[0.3961149752140045, 0.36266589164733887, 0.12713494896888733, 0.11408428847789764]
+[step 0070/150] method=baseline_cagrad loss=0.2356 train_acc=0.8962 train_loss=0.2728 val_acc=0.9071 val_loss=0.2468 router_H=0.6659 best=0.9071
+           router_load=[0.3961149752140045, 0.36266589164733887, 0.12713494896888733, 0.11408428847789764]
+[step 0080/150] method=baseline_cagrad loss=0.1437 train_acc=0.8962 train_loss=0.2728 val_acc=0.9071 val_loss=0.2468 router_H=0.6659 best=0.9071
+           router_load=[0.3961149752140045, 0.36266589164733887, 0.12713494896888733, 0.11408428847789764]
+[step 0090/150] method=baseline_cagrad loss=0.1531 train_acc=0.8962 train_loss=0.2728 val_acc=0.9071 val_loss=0.2468 router_H=0.6659 best=0.9071
+           router_load=[0.3961149752140045, 0.36266589164733887, 0.12713494896888733, 0.11408428847789764]
+[step 0100/150] method=baseline_cagrad loss=0.2445 train_acc=0.9137 train_loss=0.2501 val_acc=0.9186 val_loss=0.2282 router_H=0.6763 best=0.9186
+           router_load=[0.2901894152164459, 0.32072412967681885, 0.2443239986896515, 0.1447625309228897]
+[step 0110/150] method=baseline_cagrad loss=0.4078 train_acc=0.9137 train_loss=0.2501 val_acc=0.9186 val_loss=0.2282 router_H=0.6763 best=0.9186
+           router_load=[0.2901894152164459, 0.32072412967681885, 0.2443239986896515, 0.1447625309228897]
+[step 0120/150] method=baseline_cagrad loss=0.6855 train_acc=0.9137 train_loss=0.2501 val_acc=0.9186 val_loss=0.2282 router_H=0.6763 best=0.9186
+           router_load=[0.2901894152164459, 0.32072412967681885, 0.2443239986896515, 0.1447625309228897]
+[step 0130/150] method=baseline_cagrad loss=0.2681 train_acc=0.9137 train_loss=0.2501 val_acc=0.9186 val_loss=0.2282 router_H=0.6763 best=0.9186
+           router_load=[0.2901894152164459, 0.32072412967681885, 0.2443239986896515, 0.1447625309228897]
+[step 0140/150] method=baseline_cagrad loss=0.2980 train_acc=0.9137 train_loss=0.2501 val_acc=0.9186 val_loss=0.2282 router_H=0.6763 best=0.9186
+           router_load=[0.2901894152164459, 0.32072412967681885, 0.2443239986896515, 0.1447625309228897]
+[step 0150/150] method=baseline_cagrad loss=0.1764 train_acc=0.9244 train_loss=0.2117 val_acc=0.9266 val_loss=0.1978 router_H=0.6808 best=0.9266
+           router_load=[0.3247263431549072, 0.34716740250587463, 0.16766731441020966, 0.16043899953365326]
+saved summary -> /home/zhujjing/MOE-grad-conflict-routing/runs/paper_suite/single_gpu/single_task/deberta_sst2_lora_e4_k2_supplement/hpo/cagrad/trial_runs/coord_05_method_baseline_cagrad_inner_lr_016/cagrad_s3.json
+saved curve -> /home/zhujjing/MOE-grad-conflict-routing/runs/paper_suite/single_gpu/single_task/deberta_sst2_lora_e4_k2_supplement/hpo/cagrad/trial_runs/coord_05_method_baseline_cagrad_inner_lr_016/cagrad_s3_curve.csv
